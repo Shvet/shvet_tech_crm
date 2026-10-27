@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: shvet_crm_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -proot" --health-interval=10s --health-timeout=5s --health-retries=10
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_DATABASE: shvet_crm_test
+      DB_USERNAME: root
+      DB_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, pdo_mysql, redis
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env && php artisan key:generate
+      - run: composer validate --no-check-publish
+      - run: composer audit
+      - run: vendor/bin/pint --test
+      - run: php artisan test
+      # Static analysis. Larastan could not be installed in the authoring sandbox (GitHub archive downloads were
+      # blocked), so this step and phpstan.neon are UNVERIFIED. It is non-blocking until it has run green once;
+      # then delete `continue-on-error` to make it a real gate.
+      - name: Static analysis (Larastan, level 5)
+        continue-on-error: true
+        run: |
+          composer require --dev larastan/larastan --no-interaction --no-progress
+          mkdir -p storage/framework/phpstan
+          vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+  frontend:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
