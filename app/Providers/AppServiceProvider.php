@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\FollowUpTask;
+use App\Models\Lead;
+use App\Services\Leads\LeadVisibility;
 use App\Support\Facades\Tenancy;
 use App\Support\ProductionSafeguards;
 use App\Tenancy\TenancyManager;
@@ -11,6 +14,7 @@ use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -29,6 +33,24 @@ class AppServiceProvider extends ServiceProvider
 
             // Breached-password lookup calls an external API; keep it to production.
             return $this->app->isProduction() ? $rule->uncompromised() : $rule;
+        });
+
+        // Public ids are ULIDs: anything else is a 404 before it touches the database (also keeps /leads/create unambiguous).
+        Route::pattern('lead', '[0-9A-HJKMNP-TV-Z]{26}');
+        Route::pattern('task', '[0-9A-HJKMNP-TV-Z]{26}');
+
+        // Resolve through VISIBILITY, inside the tenant: a lead/task the user may not see is indistinguishable from a missing one.
+        Route::bind('lead', function (string $value) {
+            $user = auth()->user() ?? abort(401);
+
+            return LeadVisibility::scope(Lead::query(), $user, includeArchived: true)->where('leads.public_id', $value)->firstOrFail();
+        });
+        Route::bind('task', function (string $value) {
+            $user = auth()->user() ?? abort(401);
+
+            return FollowUpTask::query()
+                ->whereIn('follow_up_tasks.lead_id', LeadVisibility::scope(Lead::query(), $user, includeArchived: true)->select('leads.id'))
+                ->where('follow_up_tasks.public_id', $value)->firstOrFail();
         });
 
         // Page props live in the browser's history state: encrypt them, and drop the key on logout, so the back

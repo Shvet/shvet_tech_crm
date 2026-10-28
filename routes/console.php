@@ -1,6 +1,8 @@
 <?php
 
 use App\Actions\Tenancy\ProvisionTenant;
+use App\Actions\Tenancy\SyncTenantRoles;
+use App\Models\Tenant;
 use App\Support\ProductionSafeguards;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Password;
@@ -22,6 +24,17 @@ Artisan::command('crm:preflight', function () {
 
     return $critical === [] ? self::SUCCESS : self::FAILURE;
 })->purpose('Check production security configuration (run against the production environment before go-live)');
+
+Artisan::command('crm:sync-roles', function () {
+    // Idempotent: aligns every tenant's Admin / Sales Manager / Sales Agent permissions with the code (run after deploys
+    // that add permissions; new tenants get them at provisioning).
+    $count = 0;
+    foreach (Tenant::query()->orderBy('id')->get() as $tenant) {
+        (new SyncTenantRoles)($tenant);
+        $count++;
+    }
+    $this->info("Synchronized roles for {$count} tenant(s).");
+})->purpose('Re-sync role permissions for all tenants');
 
 // Platform-level operation: not available to any tenant role. Run by an operator on the server.
 Artisan::command('tenants:provision {name : Company / workspace name} {admin_email : First Admin e-mail} {--admin-name= : First Admin display name} {--slug= : URL-safe identifier}', function () {

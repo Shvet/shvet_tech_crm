@@ -20,6 +20,9 @@ class LeadFactory extends Factory
             'full_name' => fake()->name(),
             'phone_e164' => '+91'.fake()->numerify('9#########'),
             'email' => fake()->unique()->safeEmail(),
+            'company_name' => fake()->company(),
+            'priority' => 'medium',
+            'stage_changed_at' => now(),
             'lead_source_id' => fn () => LeadSource::query()->where('key', 'manual')->value('id'),
             'pipeline_stage_id' => fn () => PipelineStage::query()->where('key', 'new')->value('id'),
         ];

@@ -4,7 +4,14 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LeadActivityController;
+use App\Http\Controllers\LeadArchiveController;
+use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LeadOwnerController;
+use App\Http\Controllers\LeadStageController;
+use App\Http\Controllers\PipelineController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -39,6 +46,28 @@ Route::middleware(['auth', EnsureUserIsActive::class, AuthenticateSession::class
     // Everything below runs inside a validated tenant context.
     Route::middleware('tenant')->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+        // CRM workflow. {lead}/{task} are resolved THROUGH the user's visibility (see AppServiceProvider),
+        // so an id the user may not see is a 404, exactly like an id that does not exist.
+        Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+        Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');
+        Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
+        Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
+        Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
+        Route::patch('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+        Route::patch('/leads/{lead}/stage', [LeadStageController::class, 'update'])->name('leads.stage');
+        Route::patch('/leads/{lead}/owner', [LeadOwnerController::class, 'update'])->name('leads.owner');
+        Route::post('/leads/{lead}/archive', [LeadArchiveController::class, 'archive'])->name('leads.archive');
+        Route::post('/leads/{lead}/restore', [LeadArchiveController::class, 'restore'])->name('leads.restore');
+        Route::post('/leads/{lead}/activities', [LeadActivityController::class, 'store'])->name('leads.activities.store');
+        Route::post('/leads/{lead}/tasks', [TaskController::class, 'store'])->name('leads.tasks.store');
+
+        Route::get('/pipeline', [PipelineController::class, 'index'])->name('pipeline');
+
+        Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+        Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+        Route::post('/tasks/{task}/complete', [TaskController::class, 'complete'])->name('tasks.complete');
+        Route::post('/tasks/{task}/reopen', [TaskController::class, 'reopen'])->name('tasks.reopen');
 
         Route::get('/team', [TeamController::class, 'index'])->name('team.index');
         Route::post('/team/members', [TeamController::class, 'store'])->middleware('throttle:invitations')->name('team.store');

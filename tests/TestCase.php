@@ -7,12 +7,16 @@ use App\Actions\Tenancy\SyncTenantRoles;
 use App\Enums\MembershipStatus;
 use App\Enums\RoleName;
 use App\Http\Middleware\ResolveTenant;
+use App\Models\Lead;
+use App\Models\LeadSource;
+use App\Models\PipelineStage;
 use App\Models\Tenant;
 use App\Models\TenantMembership;
 use App\Models\User;
 use App\Support\Facades\Tenancy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Str;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -84,6 +88,44 @@ abstract class TestCase extends BaseTestCase
         $this->app['auth']->forgetGuards();
 
         return $this;
+    }
+
+    /** Create a lead inside $tenant. $attributes may set owner_id (a user id), pipeline_stage_id, archived_at, ... */
+    protected function lead(Tenant $tenant, array $attributes = [], ?string $stageKey = null): Lead
+    {
+        return Tenancy::runAs($tenant, function () use ($attributes, $stageKey) {
+            if ($stageKey !== null) {
+                $attributes['pipeline_stage_id'] = PipelineStage::query()->where('key', $stageKey)->value('id');
+            }
+
+            return Lead::factory()->create($attributes);
+        });
+    }
+
+    protected function stageId(Tenant $tenant, string $key): int
+    {
+        return Tenancy::runAs($tenant, fn () => (int) PipelineStage::query()->where('key', $key)->value('id'));
+    }
+
+    protected function sourceId(Tenant $tenant, string $key = 'manual'): int
+    {
+        return Tenancy::runAs($tenant, fn () => (int) LeadSource::query()->where('key', $key)->value('id'));
+    }
+
+    /** Valid payload for POST /leads inside $tenant. */
+    protected function leadPayload(Tenant $tenant, array $overrides = []): array
+    {
+        return [
+            'full_name' => 'Asha Verma',
+            'phone' => '98765 43210',
+            'email' => 'asha@example.test',
+            'company_name' => 'Verma Traders',
+            'priority' => 'high',
+            'estimated_value' => '125000.50',
+            'lead_source_id' => $this->sourceId($tenant),
+            'submission_token' => (string) Str::uuid(),
+            ...$overrides,
+        ];
     }
 
     protected function runIn(Tenant $tenant, \Closure $callback): mixed

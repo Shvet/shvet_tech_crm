@@ -2,10 +2,11 @@
 
 Multi-tenant, lightweight CRM: Meta (Facebook/Instagram) Lead Ads, WhatsApp Business Platform (Cloud API) shared inbox, sales pipeline, follow-ups and reporting.
 
-**Status:** Phase 1a — foundation (Laravel 13, auth, tenancy, memberships, roles/permissions, isolation tests). Meta, WhatsApp and billing integrations are **not** implemented yet; nothing here has been tested against real Meta APIs.
+**Status:** Phase 2 — core CRM workflow (leads, pipeline, activities, follow-ups, dashboard) on top of the Phase 1a multi-tenant foundation. Meta, WhatsApp and billing integrations are **not** implemented yet; nothing here has been tested against real Meta APIs. See [`docs/PHASE_2_CRM_WORKFLOW.md`](docs/PHASE_2_CRM_WORKFLOW.md) for features, the role-permission matrix, limitations and the manual QA checklist.
 
 - Architecture, multi-tenancy design, schema, phases: [`docs/CRM_IMPLEMENTATION_PLAN.md`](docs/CRM_IMPLEMENTATION_PLAN.md)
 - Meta & WhatsApp prerequisites: [`docs/INTEGRATION_REQUIREMENTS.md`](docs/INTEGRATION_REQUIREMENTS.md)
+- Phase 2 CRM workflow: [`docs/PHASE_2_CRM_WORKFLOW.md`](docs/PHASE_2_CRM_WORKFLOW.md)
 
 ## Stack
 PHP 8.3 · Laravel 13 · MySQL 8 · Redis (queues/cache in production) · Inertia 3 + React 19 + TypeScript · Vite 8 · Tailwind 4 · spatie/laravel-permission (teams mode keyed by `tenant_id`).
@@ -63,6 +64,11 @@ cd .. && BASE_URL=http://127.0.0.1:8766 MAIL_LOG=storage/logs/mail.log npm run e
 ```
 It is not part of CI yet (needs a pinned Playwright dependency and browsers).
 
+The Phase 2 CRM workflow has its own suite, `e2e/crm.cjs` (18 checks: lead creation incl. double-click, duplicates, search, Kanban move by select and drag-and-drop, activities, follow-ups, assignment, archive/restore, cross-tenant URL probing, mobile layout). Same setup, on a freshly seeded database:
+```bash
+BASE_URL=http://127.0.0.1:8766 E2E_DB=shvet_crm_e2e npm run e2e:crm
+```
+
 ## Tenancy rules for contributors
 1. Every tenant-owned model uses `App\Tenancy\BelongsToTenant` (an architecture test enforces it for any model with a `tenant_id` column).
 2. Queries fail closed without a tenant context. Cross the boundary only via `Tenancy::runAs()` / `Tenancy::withoutScope()` — never `withoutGlobalScope(s)` (a test greps for it).
@@ -80,7 +86,7 @@ It is not part of CI yet (needs a pinned Playwright dependency and browsers).
 | Mail | Real transport (`MAIL_MAILER=smtp|ses|...`) with SPF/DKIM/DMARC for the sender domain. `log`/`array` mailers are rejected at boot in production because reset links would be written to disk |
 | Database accounts | **Three** accounts: (1) *runtime* app user with `SELECT, INSERT, UPDATE, DELETE` only (no DDL, no `TRIGGER`, no `SUPER`, not `root`); (2) *migration/deploy* user with DDL + `TRIGGER` (+ `SUPER` or `log_bin_trust_function_creators=1`); (3) backup user (`SELECT, LOCK TABLES, SHOW VIEW`). The runtime user cannot drop the audit triggers |
 | Workers | `php artisan queue:work redis --tries=3 --max-time=3600` under Supervisor; restart on every deploy (`php artisan queue:restart`); `* * * * * php artisan schedule:run` in cron |
-| Deploy steps | `composer install --no-dev --optimize-autoloader`, `npm ci && npm run build`, `php artisan migrate --force` (deploy account), `php artisan config:cache route:cache view:cache`, **`php artisan crm:preflight` must exit 0**, `queue:restart` |
+| Deploy steps | `composer install --no-dev --optimize-autoloader`, `npm ci && npm run build`, `php artisan migrate --force` (deploy account), `php artisan config:cache route:cache view:cache`, **`php artisan crm:sync-roles`** (aligns every tenant's role permissions with the code; required after releases that add permissions, e.g. `leads.archive`), **`php artisan crm:preflight` must exit 0**, `queue:restart` |
 | Files/permissions | Web root = `public/` only; `storage/` and `bootstrap/cache/` writable by the PHP user, nothing else; `.env` mode 600, never in the web root or git |
 | Backups | Daily encrypted MySQL dump copied off-server, restore tested before go-live; `APP_KEY` stored separately in a secret manager |
 | First tenant | `php artisan tenants:provision "Company" owner@company.com` (never run the demo seeder: it only runs in `local`/`testing`) |

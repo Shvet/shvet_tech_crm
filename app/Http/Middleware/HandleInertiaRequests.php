@@ -45,10 +45,12 @@ class HandleInertiaRequests extends Middleware
             'tenant' => fn () => ($tenant = Tenancy::current()) ? [
                 'id' => $tenant->public_id,
                 'name' => $tenant->name,
+                'timezone' => $tenant->timezone,
+                'currency' => $tenant->currency,
                 'role' => $request->user()?->getRoleNames()->first(),
                 'permissions' => $request->user()?->getAllPermissions()->pluck('name')->values()->all() ?? [],
             ] : null,
-            'flash' => fn () => ['status' => $request->session()->get('status')],
+            'flash' => fn () => ['status' => $request->session()->get('status'), 'duplicates' => $request->session()->get('duplicates')],
         ];
     }
 }

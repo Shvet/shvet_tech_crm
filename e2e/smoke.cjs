@@ -417,7 +417,7 @@ const mailOffset = () => (fs.existsSync(MAIL_LOG) ? fs.statSync(MAIL_LOG).size :
         await agent.page.goBack();
         await agent.page.waitForTimeout(800);
         // Without reload: the previous user's page must not be rendered from browser history.
-        assert(!(await agent.page.content()).includes('You are working in'), 'dashboard content visible from history after logout');
+        assert(!(await agent.page.content()).includes('Figures cover the leads you are allowed to see'), 'dashboard content visible from history after logout');
         await agent.page.reload();
         assert(agent.page.url().endsWith('/login'), `after back+reload at ${agent.page.url()}`);
         const res = await agent.page.goto('/dashboard');

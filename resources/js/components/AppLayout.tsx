@@ -2,10 +2,10 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import { visibleNav } from '../lib/permissions';
 import type { SharedProps } from '../types';
-import { StatusBanner } from './ui';
+import { ErrorBanner, StatusBanner } from './ui';
 
 export default function AppLayout({ title, children }: { title: string; children: ReactNode }) {
-    const { auth, tenant, flash } = usePage<SharedProps>().props;
+    const { auth, tenant, flash, errors } = usePage<SharedProps>().props;
     const [open, setOpen] = useState(false);
     const nav = visibleNav(tenant?.permissions);
 
@@ -45,6 +45,7 @@ export default function AppLayout({ title, children }: { title: string; children
             <main className="flex-1 p-4 md:p-8">
                 <h1 className="mb-4 text-2xl font-semibold">{title}</h1>
                 <StatusBanner message={flash?.status} />
+                <ErrorBanner message={errors?.stage ?? errors?.lead ?? errors?.task} />
                 <div className="mt-4">{children}</div>
             </main>
         </div>

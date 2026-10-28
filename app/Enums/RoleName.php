@@ -16,7 +16,7 @@ enum RoleName: string
             self::SalesManager => [
                 Permission::DashboardView,
                 Permission::LeadsViewTeam, Permission::LeadsCreate, Permission::LeadsUpdate,
-                Permission::LeadsAssign, Permission::LeadsBulkUpdate, Permission::LeadsExport,
+                Permission::LeadsAssign, Permission::LeadsArchive, Permission::LeadsBulkUpdate, Permission::LeadsExport,
                 Permission::TasksManage, Permission::ConversationsView, Permission::ConversationsReply,
                 Permission::ReportsView, Permission::UsersView,
             ],

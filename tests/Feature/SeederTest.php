@@ -28,4 +28,21 @@ class SeederTest extends TestCase
         $this->expectException(\RuntimeException::class);
         (new DatabaseSeeder)->run();
     }
+
+    public function test_demo_data_gives_each_role_a_realistic_but_correctly_scoped_workspace(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $counts = [];
+        foreach (['admin@shvet.test', 'manager@shvet.test', 'agent@shvet.test'] as $email) {
+            $this->asGuest();
+            $this->post('/login', ['email' => $email, 'password' => DatabaseSeeder::DEMO_PASSWORD]);
+            $counts[$email] = $this->get('/leads')->viewData('page')['props']['leads']['total'];
+        }
+
+        $this->assertSame(['admin@shvet.test' => 10, 'manager@shvet.test' => 10, 'agent@shvet.test' => 4], $counts);
+        // Logged in as the agent last: exactly one seeded follow-up on THEIR leads is overdue (Priya's brochure);
+        // the other overdue seeded task belongs to a lead owned by someone else and must not appear.
+        $this->assertSame(1, $this->get('/dashboard')->viewData('page')['props']['metrics']['tasks']['overdue']);
+    }
 }

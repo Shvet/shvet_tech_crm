@@ -3,11 +3,20 @@ export function can(permissions: string[] | undefined, permission: string): bool
     return !!permissions && permissions.includes(permission);
 }
 
+export function canAny(permissions: string[] | undefined, wanted: readonly string[]): boolean {
+    return wanted.some((p) => can(permissions, p));
+}
+
+const VIEW_LEADS = ['leads.view_all', 'leads.view_team', 'leads.view_own'] as const;
+
 export const NAV_ITEMS = [
-    { href: '/dashboard', label: 'Dashboard', permission: 'dashboard.view' },
-    { href: '/team', label: 'Team', permission: 'users.view' },
+    { href: '/dashboard', label: 'Dashboard', anyOf: ['dashboard.view'] },
+    { href: '/leads', label: 'Leads', anyOf: VIEW_LEADS },
+    { href: '/pipeline', label: 'Pipeline', anyOf: VIEW_LEADS },
+    { href: '/tasks', label: 'Follow-ups', anyOf: ['tasks.manage'] },
+    { href: '/team', label: 'Team', anyOf: ['users.view'] },
 ] as const;
 
 export function visibleNav(permissions: string[] | undefined) {
-    return NAV_ITEMS.filter((item) => can(permissions, item.permission));
+    return NAV_ITEMS.filter((item) => canAny(permissions, item.anyOf));
 }

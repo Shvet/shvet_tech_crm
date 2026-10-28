@@ -15,6 +15,7 @@ enum Permission: string
     case LeadsCreate = 'leads.create';
     case LeadsUpdate = 'leads.update';
     case LeadsDelete = 'leads.delete';
+    case LeadsArchive = 'leads.archive';
     case LeadsAssign = 'leads.assign';
     case LeadsBulkUpdate = 'leads.bulk_update';
     case LeadsExport = 'leads.export';

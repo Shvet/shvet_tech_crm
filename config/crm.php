@@ -14,4 +14,15 @@ return [
     */
     'enforce_host' => (bool) env('CRM_ENFORCE_HOST', env('APP_ENV') === 'production'),
     'allowed_hosts' => array_filter(array_map('trim', explode(',', (string) env('CRM_ALLOWED_HOSTS', '')))),
+
+    /*
+    | Default region used to interpret phone numbers typed without a country code (ISO 3166-1 alpha-2).
+    */
+    'default_region' => env('CRM_DEFAULT_REGION', 'IN'),
+
+    /*
+    | List sizes.
+    */
+    'leads_per_page' => (int) env('CRM_LEADS_PER_PAGE', 20),
+    'pipeline_cards_per_stage' => (int) env('CRM_PIPELINE_CARDS_PER_STAGE', 30),
 ];

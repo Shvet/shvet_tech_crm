@@ -1,6 +1,6 @@
 # Shvet Technologies CRM — Architecture & Implementation Plan
 
-Status: **Phase 0 approved with amendments (multi-tenancy added, §3A). Phase 1a (foundation, auth, tenancy, RBAC, isolation tests) implemented and security-reviewed (see `docs/PHASE_1A_SECURITY_REVIEW.md`) — awaiting approval. Nothing committed.**
+Status: **Phase 0 approved with amendments (multi-tenancy added, §3A). Phase 1a committed and pushed (`58c3b9d`). Phase 2 (core CRM workflow) implemented and verified in the working tree — see `docs/PHASE_2_CRM_WORKFLOW.md` — awaiting approval; not committed.**
 Last updated: 2026-10-27 (rev. 2 — multi-tenancy)
 
 ---
