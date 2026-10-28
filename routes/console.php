@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Support\ProductionSafeguards;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Validation\ValidationException;
 
 Artisan::command('crm:preflight', function () {
@@ -64,3 +65,8 @@ Artisan::command('tenants:provision {name : Company / workspace name} {admin_ema
 
     return self::SUCCESS;
 })->purpose('Provision a new tenant with its first Admin');
+
+// Meta Lead Ads housekeeping. Needs `* * * * * php artisan schedule:run` (see README). All are idempotent.
+Schedule::command('meta:recover-events')->everyMinute()->withoutOverlapping(10)->onOneServer();
+Schedule::command('meta:validate-connections')->dailyAt('03:17')->withoutOverlapping(60)->onOneServer();
+Schedule::command('meta:prune')->dailyAt('03:47')->withoutOverlapping(60)->onOneServer();

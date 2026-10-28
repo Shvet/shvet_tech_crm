@@ -1,0 +1,21 @@
+{
+  "id": "900000000000001",
+  "created_time": "2026-10-28T09:30:00+0000",
+  "ad_id": "6000000000001",
+  "ad_name": "Diwali Offer Ad",
+  "adset_id": "6000000000002",
+  "adset_name": "Mumbai 25-45",
+  "campaign_id": "6000000000003",
+  "campaign_name": "Diwali 2026",
+  "form_id": "700000000000001",
+  "is_organic": false,
+  "platform": "fb",
+  "field_data": [
+    {"name": "full_name", "values": ["Asha Verma"]},
+    {"name": "email", "values": ["Asha.Verma@Example.test"]},
+    {"name": "phone_number", "values": ["+91 98765 43210"]},
+    {"name": "company_name", "values": ["Verma Traders"]},
+    {"name": "budget_range", "values": ["50k-1L"]},
+    {"name": "city", "values": ["Mumbai"]}
+  ]
+}

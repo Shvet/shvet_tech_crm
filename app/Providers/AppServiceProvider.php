@@ -4,6 +4,11 @@ namespace App\Providers;
 
 use App\Models\FollowUpTask;
 use App\Models\Lead;
+use App\Models\MetaConnection;
+use App\Models\MetaFormMapping;
+use App\Models\MetaLeadEvent;
+use App\Models\MetaPage;
+use App\Policies\MetaIntegrationPolicy;
 use App\Services\Leads\LeadVisibility;
 use App\Support\Facades\Tenancy;
 use App\Support\ProductionSafeguards;
@@ -12,6 +17,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +44,15 @@ class AppServiceProvider extends ServiceProvider
         // Public ids are ULIDs: anything else is a 404 before it touches the database (also keeps /leads/create unambiguous).
         Route::pattern('lead', '[0-9A-HJKMNP-TV-Z]{26}');
         Route::pattern('task', '[0-9A-HJKMNP-TV-Z]{26}');
+        foreach (['metaConnection', 'metaPage', 'metaMapping', 'metaEvent'] as $param) {
+            Route::pattern($param, '[0-9A-HJKMNP-TV-Z]{26}');
+        }
+        // Tenant-scoped by the models' global scope (ResolveTenant runs before binding): foreign ids are 404s.
+        Route::model('metaConnection', MetaConnection::class);
+        Route::model('metaPage', MetaPage::class);
+        Route::model('metaMapping', MetaFormMapping::class);
+        Route::model('metaEvent', MetaLeadEvent::class);
+        Gate::policy(MetaConnection::class, MetaIntegrationPolicy::class);
 
         // Resolve through VISIBILITY, inside the tenant: a lead/task the user may not see is indistinguishable from a missing one.
         Route::bind('lead', function (string $value) {
@@ -59,6 +74,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Named limiters have their own buckets. (Unnamed `throttle:N,M` shares ONE counter per client IP across
         // every route that uses it, so login failures would eat into the password-reset budget and vice versa.)
+        // Meta webhooks: signature checking is the real gate; these only cap abuse per source IP.
+        RateLimiter::for('meta-webhook', fn (Request $request) => Limit::perMinute(600)->by('meta-webhook|'.$request->ip()));
+        // Admin-initiated calls that hit Meta's API: per user, so a stuck button cannot burn the app's rate budget.
+        RateLimiter::for('meta-admin', fn (Request $request) => Limit::perMinute(20)->by('meta-admin|'.Tenancy::id().'|'.$request->user()?->getKey()));
+        RateLimiter::for('meta-webhook-verify', fn (Request $request) => Limit::perMinute(30)->by('meta-webhook-verify|'.$request->ip()));
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(30)->by('login|'.$request->ip()));
         RateLimiter::for('password-reset-request', fn (Request $request) => [
             Limit::perMinute(6)->by('pwreq|'.$request->ip()),

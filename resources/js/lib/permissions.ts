@@ -15,6 +15,7 @@ export const NAV_ITEMS = [
     { href: '/pipeline', label: 'Pipeline', anyOf: VIEW_LEADS },
     { href: '/tasks', label: 'Follow-ups', anyOf: ['tasks.manage'] },
     { href: '/team', label: 'Team', anyOf: ['users.view'] },
+    { href: '/integrations/meta', label: 'Meta Lead Ads', anyOf: ['integrations.manage'] },
 ] as const;
 
 export function visibleNav(permissions: string[] | undefined) {

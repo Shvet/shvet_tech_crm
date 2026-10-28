@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
 #[Fillable([
     'full_name', 'phone_e164', 'email', 'company_name', 'priority', 'estimated_value',
     'lead_source_id', 'pipeline_stage_id', 'owner_id', 'created_by', 'submission_token',
-    'stage_changed_at', 'last_contacted_at', 'archived_at', 'archived_by',
+    'external_provider', 'external_id', 'stage_changed_at', 'last_contacted_at', 'archived_at', 'archived_by',
 ])]
 class Lead extends Model
 {

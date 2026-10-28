@@ -9,6 +9,9 @@ use App\Http\Controllers\LeadArchiveController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadOwnerController;
 use App\Http\Controllers\LeadStageController;
+use App\Http\Controllers\Meta\MetaEventController;
+use App\Http\Controllers\Meta\MetaIntegrationController;
+use App\Http\Controllers\Meta\MetaMappingController;
 use App\Http\Controllers\PipelineController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TaskController;
@@ -73,5 +76,22 @@ Route::middleware(['auth', EnsureUserIsActive::class, AuthenticateSession::class
         Route::post('/team/members', [TeamController::class, 'store'])->middleware('throttle:invitations')->name('team.store');
         Route::patch('/team/members/{membership}', [TeamController::class, 'update'])->name('team.update');
         Route::delete('/team/members/{membership}', [TeamController::class, 'destroy'])->name('team.destroy');
+
+        // Meta Lead Ads (Admin only: every action authorizes integrations.manage). Route params are tenant-scoped public ids.
+        Route::prefix('integrations/meta')->name('integrations.meta.')->group(function () {
+            Route::get('/', [MetaIntegrationController::class, 'index'])->name('index');
+            Route::post('/connect', [MetaIntegrationController::class, 'connect'])->middleware('throttle:meta-admin')->name('connect');
+            Route::get('/callback', [MetaIntegrationController::class, 'callback'])->middleware('throttle:meta-admin')->name('callback');
+            Route::post('/connections/{metaConnection}/pages', [MetaIntegrationController::class, 'connectPages'])->name('pages.connect');
+            Route::post('/connections/{metaConnection}/validate', [MetaIntegrationController::class, 'validateConnection'])->middleware('throttle:meta-admin')->name('connections.validate');
+            Route::delete('/connections/{metaConnection}', [MetaIntegrationController::class, 'disconnect'])->name('connections.disconnect');
+            Route::post('/pages/{metaPage}/sync-forms', [MetaIntegrationController::class, 'syncForms'])->middleware('throttle:meta-admin')->name('pages.sync');
+            Route::post('/pages/{metaPage}/subscribe', [MetaIntegrationController::class, 'resubscribe'])->middleware('throttle:meta-admin')->name('pages.subscribe');
+            Route::delete('/pages/{metaPage}', [MetaIntegrationController::class, 'disconnectPage'])->name('pages.disconnect');
+            Route::put('/mappings/{metaMapping}', [MetaMappingController::class, 'update'])->name('mappings.update');
+            Route::post('/events/{metaEvent}/retry', [MetaEventController::class, 'retry'])->middleware('throttle:meta-admin')->name('events.retry');
+            Route::post('/events/{metaEvent}/create-anyway', [MetaEventController::class, 'createAnyway'])->middleware('throttle:meta-admin')->name('events.create-anyway');
+            Route::post('/events/{metaEvent}/dismiss', [MetaEventController::class, 'dismiss'])->name('events.dismiss');
+        });
     });
 });

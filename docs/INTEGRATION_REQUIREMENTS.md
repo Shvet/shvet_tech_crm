@@ -180,3 +180,7 @@ Inbound messages from **Click-to-WhatsApp ads** include a `referral` object (`so
 3. Which WhatsApp templates (and languages — English, Hindi, Gujarati?) should be prepared for approval?
 4. Should Click-to-WhatsApp ads be part of the campaign plan (enables WhatsApp attribution)?
 5. Who in Shvet is the Meta Business admin who will create the System User and token?
+
+---
+
+> **Phase 3 update.** Meta Lead Ads is implemented with per-tenant **OAuth** only; the manually entered System User token option from the Phase 0 decisions is *not* implemented (see `docs/PHASE_3_META_LEAD_ADS.md` §10). The phase numbering above predates the delivered phases (Phase 2 = core CRM, Phase 3 = Meta Lead Ads). Meta-specific requirements and every unverified assumption are maintained in the Phase 3 document, not here.

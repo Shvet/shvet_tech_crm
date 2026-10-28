@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Services\Meta\MetaConfig;
+
 /**
  * Configuration that must hold before this application serves real tenants. `critical()` problems make
  * a production HTTP boot fail; `warnings()` are reported by `php artisan crm:preflight`.
@@ -38,6 +40,19 @@ class ProductionSafeguards
             $problems[] = 'SESSION_DRIVER must be server-side (database or redis)';
         }
 
+        // Meta is optional, but a half-configured integration must not go live silently.
+        if (MetaConfig::isPartiallyConfigured()) {
+            if (MetaConfig::missing() !== []) {
+                $problems[] = 'Meta integration is half-configured; missing: '.implode(', ', MetaConfig::missing());
+            }
+            if (strlen((string) config('meta.webhook_verify_token')) < 24) {
+                $problems[] = 'META_WEBHOOK_VERIFY_TOKEN must be at least 24 random characters';
+            }
+            if (! str_starts_with(MetaConfig::redirectUri(), 'https://')) {
+                $problems[] = 'The Meta OAuth redirect URI must be https://';
+            }
+        }
+
         return $problems;
     }
 
@@ -66,6 +81,9 @@ class ProductionSafeguards
         }
         if (config('permission.teams') !== true) {
             $warnings[] = 'spatie permission teams mode is off: roles would not be tenant-scoped';
+        }
+        if (MetaConfig::isConfigured() && config('queue.default') === 'sync') {
+            $warnings[] = 'Meta lead imports need a real queue worker (QUEUE_CONNECTION=sync would import inside the webhook request)';
         }
 
         return $warnings;

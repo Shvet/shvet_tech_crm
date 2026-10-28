@@ -128,3 +128,62 @@ export interface DashboardMetrics {
     recent_activity: { id: number; type: ActivityType; subject: string | null; occurred_at: string; user: string | null; lead: { id: string; name: string } }[];
     tasks: { overdue: number; today: number; upcoming: number };
 }
+
+export type MetaConnectionStatus = 'pending_selection' | 'active' | 'reauthorization_required' | 'disconnected';
+export type MetaEventStatus = 'received' | 'processing' | 'imported' | 'needs_review' | 'dismissed' | 'ignored' | 'failed' | 'quarantined';
+
+export interface MetaFormRow {
+    id: string;
+    form_id: string;
+    name: string;
+    status: string | null;
+    enabled: boolean;
+    lead_source_id: number | null;
+    pipeline_stage_id: number | null;
+    default_owner_id: number | null;
+    field_map: Record<string, string>;
+    last_import_at: string | null;
+}
+
+export interface MetaPageRow {
+    id: string;
+    connection_id: string | null;
+    name: string;
+    subscription_status: 'pending' | 'subscribed' | 'failed' | 'unsubscribed';
+    subscription_error: string | null;
+    last_sync_at: string | null;
+    forms: MetaFormRow[];
+}
+
+export interface MetaConnectionRow {
+    id: string;
+    account_name: string | null;
+    status: MetaConnectionStatus;
+    last_validated_at: string | null;
+    last_sync_at: string | null;
+    data_access_expires_at: string | null;
+    error: string | null;
+    pending_pages: { id: string; name: string }[];
+}
+
+export interface MetaEventRow {
+    id: string;
+    status: MetaEventStatus;
+    outcome: string | null;
+    received_at: string;
+    attempts: number;
+    platform: string | null;
+    failure: string | null;
+    warnings: string[];
+    lead_id: string | null;
+    replayable: boolean;
+    reviewable: boolean;
+}
+
+export interface MetaSetup {
+    configured: boolean;
+    missing: string[];
+    redirect_uri: string | null;
+    webhook_url: string;
+    permissions: string[];
+}

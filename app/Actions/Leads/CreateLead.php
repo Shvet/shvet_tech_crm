@@ -66,6 +66,49 @@ class CreateLead
         return ['lead' => $lead, 'created' => true];
     }
 
+    /**
+     * Creates a lead on behalf of an integration (no human actor): created_by stays null and the note, if any,
+     * is system-authored. The caller has already validated source/stage/owner against the tenant (see MetaLeadImporter).
+     * Idempotent on (external_provider, external_id): a repeat returns the existing lead with created=false.
+     *
+     * @param  array<string, mixed>  $data  Needs external_provider and external_id.
+     * @return array{lead: Lead, created: bool}
+     *
+     * @throws DuplicateLeadException when phone/e-mail match an existing lead and $confirmDuplicate is false
+     */
+    public function import(array $data, bool $confirmDuplicate = false): array
+    {
+        $provider = $data['external_provider'];
+        $externalId = $data['external_id'];
+
+        if ($existing = $this->existingExternal($provider, $externalId)) {
+            return ['lead' => $existing, 'created' => false];
+        }
+
+        if (($data['owner_id'] ?? null) !== null) {
+            ActiveMemberGuard::ensure((int) $data['owner_id'], 'owner_id');
+        }
+
+        if (! $confirmDuplicate) {
+            $matches = DuplicateFinder::find($data['phone_e164'] ?? null, $data['email'] ?? null);
+            if ($matches->isNotEmpty()) {
+                throw new DuplicateLeadException($matches);
+            }
+        }
+
+        try {
+            $lead = $this->persist($data, $data['owner_id'] ?? null, null, null);
+        } catch (QueryException $e) {
+            if ($this->isDuplicateKey($e) && ($existing = $this->existingExternal($provider, $externalId))) {
+                return ['lead' => $existing, 'created' => false];
+            }
+
+            throw $e;
+        }
+
+        return ['lead' => $lead, 'created' => true];
+    }
+
     /** @param  array<string, mixed>  $data */
     private function persist(array $data, ?int $ownerId, ?int $actorId, ?string $token): Lead
     {
@@ -86,6 +129,8 @@ class CreateLead
                 'owner_id' => $ownerId,
                 'created_by' => $actorId,
                 'submission_token' => $token,
+                'external_provider' => $data['external_provider'] ?? null,
+                'external_id' => $data['external_id'] ?? null,
                 'stage_changed_at' => now(),
             ]);
 
@@ -109,6 +154,11 @@ class CreateLead
 
             return $lead;
         });
+    }
+
+    private function existingExternal(string $provider, string $externalId): ?Lead
+    {
+        return Lead::query()->where('external_provider', $provider)->where('external_id', $externalId)->first();
     }
 
     private function existing(User $actor, string $token): ?Lead

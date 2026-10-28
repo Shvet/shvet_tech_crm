@@ -8,7 +8,8 @@
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
         "e2e": "node e2e/smoke.cjs",
-        "e2e:crm": "node e2e/crm.cjs"
+        "e2e:crm": "node e2e/crm.cjs",
+        "e2e:meta": "node e2e/meta.cjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
