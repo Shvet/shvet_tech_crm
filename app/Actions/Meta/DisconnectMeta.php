@@ -37,6 +37,7 @@ class DisconnectMeta
             'pending_assets' => null,
             'pending_assets_expires_at' => null,
             'granted_permissions' => null,
+            'meta_user_name' => null, // the Facebook display name is personal data we no longer need
             'disconnected_at' => now(),
             'last_error_code' => null,
             'last_error_summary' => null,

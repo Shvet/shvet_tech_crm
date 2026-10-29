@@ -59,5 +59,8 @@ jobs:
       - run: npm ci
       - run: npm audit --audit-level=high
       - run: npm run typecheck
+      # laravel-vite-plugin refuses to start a Vite server in CI; vitest only needs the config, not the HMR server.
       - run: npm test
+        env:
+          LARAVEL_BYPASS_ENV_CHECK: '1'
       - run: npm run build

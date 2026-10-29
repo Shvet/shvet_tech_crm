@@ -198,7 +198,7 @@ Security tests were checked by mutation: each protection (signature check, verif
 5. The webhook `leadgen` change carries `page_id`, `leadgen_id`, `form_id`, `ad_id`, `adgroup_id`, `created_time`; the lead object returns `field_data` with standard names (`full_name`, `email`, `phone_number`, `company_name`, …).
 6. Meta redelivers on non-2xx and may deliver duplicates and out of order; we assume at-least-once delivery.
 7. Instagram lead ads arrive through the linked Page with `platform = ig`.
-8. Lead retention at Meta is limited; very old leads may be `not_found` when replayed.
+8. Lead retention at Meta is limited (Meta's lead docs state leads are available for 90 days — see §13); older leads will be `not_found` when replayed.
 9. Test-mode leads from Meta's testing tool are assumed to flow through the same path.
 
 ## 10. Known limitations / not in scope
@@ -212,6 +212,8 @@ Security tests were checked by mutation: each protection (signature check, verif
 2. As a Meta app **tester/admin**, connect from *Integrations → Meta Lead Ads*; confirm all permissions are shown and granted; confirm `debug_token` scopes match.
 3. Select a **test Page**; confirm subscription status "subscribed" and that the Page's *Webhooks* subscription lists `leadgen`.
 4. Refresh forms; map one form; enable it.
+   4b. If form listing or lead retrieval fails with a permission error, note the exact Graph error code (not the token) and test adding `ads_management` via `META_OAUTH_SCOPES` / `META_REQUIRED_PERMISSIONS` — record the outcome in §13.
+   4c. The connecting Facebook user must be able to **advertise** on the Page (needed to subscribe the app to `leadgen`).
 5. Use Meta's **Lead Ads Testing Tool** to create a test lead; confirm the webhook arrives (`meta_lead_events`), the job imports it, and the lead has the right name/phone/e-mail/source/stage/owner and note.
 6. Send the same test lead twice; confirm one lead. Submit another with the same phone; confirm *needs review*.
 7. Revoke the app in the Facebook user's settings; run *Check connection*; confirm the reauthorization banner and paused imports; reconnect; retry the failed event.
@@ -221,3 +223,44 @@ Security tests were checked by mutation: each protection (signature check, verif
 
 ## 12. Sources
 Meta's official documentation could not be fetched from the authoring environment. Behavior above is based on prior knowledge of Meta's Marketing/Graph API and one secondary web search; treat every Meta-specific statement as **unverified** until checked against: Meta for Developers → *Graph API → Webhooks*, *Pages API → Leadgen*, *Facebook Login → Manually Build a Login Flow*, *Access Tokens → Debug*, *App Review → Permissions*, *Graph API Changelog* (versions).
+
+## 13. Review against Meta documentation (2026-10-29)
+
+**Method and limits.** `developers.facebook.com` is not reachable from the authoring environment (DNS fails: the host is not in the session's allowed network domains), so the official pages could **not** be opened in full. Findings below come from web-search excerpts of official Meta pages. Treat them as *indicative*, not as a full read of each page, and re-read the pages themselves before go-live. Nothing was tested against a live Meta app.
+
+| Topic | Excerpt-level finding | Implementation | Status |
+|---|---|---|---|
+| Graph version | v25.0 changelog page says *released 18 Feb 2026*; the main changelog page excerpt still showed an older "latest", so whether a newer version exists was **not** determined. A third-party guide says v20.0 stops working 24 Sep 2026. | `META_GRAPH_VERSION` is required, no default; `.env.example` leaves it blank | Consistent; operator must pick and re-check |
+| Webhook handshake | Verify request carries `hub.verify_token`, endpoint echoes `hub.challenge`, else 403 (Messenger/IAP webhook docs; same Webhooks product) | Same | Consistent |
+| Webhook signature | `X-Hub-Signature-256: sha256=<HMAC-SHA256(raw body, app secret)>`; docs' sample hashes the **raw** buffer | Raw-body HMAC, constant-time compare | Consistent |
+| Delivery semantics | Non-200 is an error and Meta retries; handlers should be idempotent. v25.0 changelog warns not to wait until the deadline. Exact retry schedule **not found**. | Persist-then-200, idempotent on `(page_id, leadgen_id)`, no Graph call in the request | Consistent; retry schedule unverified |
+| Leadgen payload | `object: page` → `entry[].changes[]` with `field: leadgen`, `value`: `leadgen_id, page_id, form_id, adgroup_id, ad_id, created_time` (some examples omit `ad_id`/`adgroup_id`); IDs only, lead data fetched separately | Parser expects exactly this, tolerates missing optional ids | Consistent |
+| Page subscription | `POST /{page-id}/subscribed_apps?subscribed_fields=leadgen` with a Page token **of someone who can advertise on the Page**; GET on same edge checks it | POST implemented; GET check not used | Consistent; add "advertiser role" prerequisite (done in §11) |
+| Permissions | Webhooks page lists `leads_retrieval, pages_manage_metadata, pages_show_list, pages_read_engagement, ads_management`; the Retrieving Leads guide lists `leads_retrieval, pages_manage_ads, pages_read_engagement, pages_show_list, ads_management`. A quickstart contains the typo `lead_retrieval`. | Requested: `pages_show_list, pages_read_engagement, pages_manage_metadata, leads_retrieval, pages_manage_ads`; **`ads_management` is not requested** | **Open difference.** Official lists include `ads_management`. Whether it is required for lead retrieval / form listing could not be settled from excerpts. Decide on the test Page (§11 step 4b); the scopes are env-configurable. |
+| Lead retrieval | `GET /{leadgen-id}` with a Page token; bulk by `/{form-id}/leads`; leads available 90 days; app must pass App Review (`leads_retrieval`, `pages_manage_ads`) and Business Verification | Per-lead GET implemented; no bulk backfill | Consistent |
+| Token lifecycle | Short-lived → long-lived via `fb_exchange_token` (server-side); a Page token obtained from a **long-lived** user token has no expiry, but is invalidated by password change/security events; from a short-lived token it lasts ~1 h; expired tokens cannot be exchanged | Exchange then `/me/accounts`, store only Page tokens, daily `debug_token` + runtime 190 handling | Consistent |
+| `data_access_expires_at` | Not documented in the excerpts; forum posts describe a ~3-month "data access" expiry that a token exchange does not extend | Read from `debug_token` if present, surfaced in UI | Unverified field |
+| Auth header / proof | Docs show `Authorization: Bearer` for tokens and `appsecret_proof = HMAC-SHA256(token, app secret)`; "Require App Secret Proof" can be enabled in app settings | Bearer header + proof on every token call | Consistent; enable the app setting only after testing |
+| Data deletion | Facebook Login apps must give a **data-deletion request callback URL** (HTTPS) or instructions URL. Request is a form POST with `signed_request`; the callback returns JSON `{url, confirmation_code}` (response shape from developer-forum excerpts, not an official page) | **Not implemented** | **Gap / launch blocker** (§14) |
+| Webhooks mTLS | v25.0 blog excerpt: a Webhooks mTLS certificate update is planned for the next Graph version | None | Operational risk: confirm the TLS terminator will not reject Meta's client certificate when it changes |
+
+### 13.1 Official sources consulted (search excerpts only)
+- Graph API v25.0 changelog — https://developers.facebook.com/docs/graph-api/changelog/version25.0
+- "Introducing Graph API v25 and Marketing API v25" — https://developers.facebook.com/blog/post/2026/02/18/introducing-graph-api-v25-and-marketing-api-v25
+- Leads — Webhooks from Meta — https://developers.facebook.com/docs/graph-api/webhooks/getting-started/webhooks-for-leadgen/
+- Retrieving Leads — https://developers.facebook.com/documentation/ads-commerce/marketing-api/guides/lead-ads/retrieving
+- Lead Ads webhooks quickstart — https://developers.facebook.com/documentation/ads-commerce/marketing-api/guides/lead-ads/quickstart/webhooks-integration
+- Lead Ads testing and troubleshooting — https://developers.facebook.com/documentation/ads-commerce/marketing-api/guides/lead-ads/testing-troubleshooting
+- Permissions Reference — https://developers.facebook.com/docs/permissions
+- Meta Webhooks for Messenger Platform (signature + handshake text) — https://developers.facebook.com/documentation/business-messaging/messenger-platform/webhooks
+- Long-lived access tokens — https://developers.facebook.com/documentation/facebook-login/guides/access-tokens/get-long-lived
+- Securing Graph API Requests (appsecret_proof) — https://developers.facebook.com/docs/graph-api/securing-requests
+- Data-deletion callback: developer-forum threads only (https://developers.facebook.com/community/threads/1268480088629667/); the official Facebook Login settings page was not retrieved.
+
+## 14. Production-readiness gaps found in review (open)
+1. **Data-deletion callback** (and ideally a deauthorize callback) + public instructions page: required for Live mode; design: verify `signed_request` (HMAC-SHA256, app secret), match `user_id` to `meta_connections.meta_user_id`, run `DisconnectMeta` for every matching connection, return `{url, confirmation_code}`, audit it.
+2. **2FA** for Admins: not implemented (platform-wide).
+3. **Audit integrity:** append-only is enforced by MySQL triggers + least-privilege grants; there is no hash chain / off-box copy, and `TRUNCATE`/`DROP` are blocked only by grants. A DBA can still alter history.
+4. **Backups:** no scripted backup/restore. A manual dump/restore drill on 2026-10-29 restored every row count and recreated all four append-only triggers (see the review report); encrypted Page tokens are unreadable without the original `APP_KEY`.
+5. **Static analysis:** Larastan ran in CI (150 findings at level 5, non-blocking); needs triage/baseline before it can gate.
+6. **`ads_management` / permission set** to be settled on a real test Page.

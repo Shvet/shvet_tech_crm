@@ -26,9 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias(['tenant' => ResolveTenant::class]);
 
         // Behind Nginx/a load balancer the client IP (used by rate limiting and audit logs) comes from
-        // X-Forwarded-For - but only trust it from proxies you list. Empty = trust none.
-        $trusted = array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', ''))));
-        $middleware->trustProxies(at: $trusted === [] ? null : $trusted);
+        // X-Forwarded-For - but only trust it from the proxies listed in TRUSTED_PROXIES (see config/trustedproxy.php;
+        // it must not be read from the environment directly here: that returns null once the config is cached). Empty = trust none.
 
         // Tenant must be resolved after authentication and BEFORE route-model binding,
         // otherwise tenant-scoped bindings would run without a tenant context.

@@ -61,7 +61,7 @@ class ProductionSafeguards
     {
         $warnings = [];
 
-        if ((string) env('TRUSTED_PROXIES', '') === '') {
+        if (config('trustedproxy.proxies', []) === []) {
             $warnings[] = 'TRUSTED_PROXIES is empty: behind a proxy/load balancer every client shares one IP (rate limits, audit IPs)';
         }
         if (config('session.encrypt') !== true) {
@@ -76,7 +76,7 @@ class ProductionSafeguards
         if (config('database.connections.'.config('database.default').'.username') === 'root') {
             $warnings[] = 'Application connects to the database as root; use a least-privilege account';
         }
-        if (config('logging.channels.single.level') === 'debug' || env('LOG_LEVEL') === 'debug') {
+        if (config('logging.channels.single.level') === 'debug' || config('logging.channels.'.config('logging.default').'.level') === 'debug') {
             $warnings[] = 'LOG_LEVEL=debug in production is noisy; use info or warning';
         }
         if (config('permission.teams') !== true) {

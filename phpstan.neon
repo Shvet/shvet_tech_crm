@@ -8,3 +8,11 @@ parameters:
         - bootstrap
         - routes
     tmpDir: storage/framework/phpstan
+    # Several findings in the first CI run came from PHPDoc types being treated as certain (e.g. nullsafe on a
+    # documented-non-null Request). Defensive code is intentional here.
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        # Artisan::command() closures are bound to the command, so `$this` and `self::SUCCESS` are valid there.
+        -
+            identifier: outOfClass.self
+            path: routes/console.php

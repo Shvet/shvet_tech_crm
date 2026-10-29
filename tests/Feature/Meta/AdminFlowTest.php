@@ -413,6 +413,7 @@ class AdminFlowTest extends TestCase
 
         $this->assertSame(0, \DB::table('meta_pages')->count());
         $this->assertSame(0, \DB::table('meta_form_mappings')->count());
+        $this->assertNull(\DB::table('meta_connections')->value('meta_user_name'));
         $this->assertSame(MetaConnectionStatus::Disconnected, Tenancy::runAs($this->tenant, fn () => $connection->fresh()->status));
         $this->assertTrue(Tenancy::runAs($this->tenant, fn () => $lead->fresh()->exists));
         Http::assertSent(fn ($r) => $r->method() === 'DELETE' && str_contains($r->url(), '/subscribed_apps'));
