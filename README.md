@@ -2,12 +2,13 @@
 
 Multi-tenant, lightweight CRM: Meta (Facebook/Instagram) Lead Ads, WhatsApp Business Platform (Cloud API) shared inbox, sales pipeline, follow-ups and reporting.
 
-**Status:** Phase 3 — Meta Facebook/Instagram Lead Ads integration (per-tenant OAuth, webhook, queued import) on top of the Phase 2 CRM workflow and Phase 1a multi-tenant foundation. **The Meta integration has only been verified against mocked Meta responses, never a real Meta app** (see the go/no-go and real-account checklist in [`docs/PHASE_3_META_LEAD_ADS.md`](docs/PHASE_3_META_LEAD_ADS.md)). WhatsApp and billing are **not** implemented. See [`docs/PHASE_2_CRM_WORKFLOW.md`](docs/PHASE_2_CRM_WORKFLOW.md) for features, the role-permission matrix, limitations and the manual QA checklist.
+**Status:** Phase 3 — Meta Facebook/Instagram Lead Ads integration (per-tenant OAuth, webhook, queued import) on top of the Phase 2 CRM workflow and Phase 1a multi-tenant foundation. **The Meta integration has only been verified against mocked Meta responses, never a real Meta app** (see the go/no-go and real-account checklist in [`docs/PHASE_3_META_LEAD_ADS.md`](docs/PHASE_3_META_LEAD_ADS.md)). Phase 4 adds a WhatsApp Cloud API shared inbox (templates, lead linking), also verified against mocks only; see [`docs/PHASE_4_WHATSAPP.md`](docs/PHASE_4_WHATSAPP.md). Billing is **not** implemented. See [`docs/PHASE_2_CRM_WORKFLOW.md`](docs/PHASE_2_CRM_WORKFLOW.md) for features, the role-permission matrix, limitations and the manual QA checklist.
 
 - Architecture, multi-tenancy design, schema, phases: [`docs/CRM_IMPLEMENTATION_PLAN.md`](docs/CRM_IMPLEMENTATION_PLAN.md)
 - Meta & WhatsApp prerequisites: [`docs/INTEGRATION_REQUIREMENTS.md`](docs/INTEGRATION_REQUIREMENTS.md)
 - Phase 2 CRM workflow: [`docs/PHASE_2_CRM_WORKFLOW.md`](docs/PHASE_2_CRM_WORKFLOW.md)
 - Phase 3 Meta Lead Ads (prerequisites, security, operations, privacy, go/no-go): [`docs/PHASE_3_META_LEAD_ADS.md`](docs/PHASE_3_META_LEAD_ADS.md)
+- Phase 4 WhatsApp inbox (setup, behaviour, limitations, go/no-go): [`docs/PHASE_4_WHATSAPP.md`](docs/PHASE_4_WHATSAPP.md)
 
 ## Stack
 PHP 8.3 · Laravel 13 · MySQL 8 · Redis (queues/cache in production) · Inertia 3 + React 19 + TypeScript · Vite 8 · Tailwind 4 · spatie/laravel-permission (teams mode keyed by `tenant_id`).
@@ -63,14 +64,14 @@ cd public && APP_ENV=staging APP_DEBUG=false APP_URL=http://127.0.0.1:8766 DB_DA
   php -S 127.0.0.1:8766 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php &
 cd .. && BASE_URL=http://127.0.0.1:8766 MAIL_LOG=storage/logs/mail.log npm run e2e
 ```
-`bash e2e/run.sh smoke crm` does all of the above (fresh database per suite, server start/stop) and is what CI's `e2e` job runs. Set `DB_PASSWORD`/`MYSQL_PWD` if your MySQL root user has a password.
+`bash e2e/run.sh smoke crm meta whatsapp` does all of the above (fresh database per suite, server start/stop) and is what CI's `e2e` job runs. Set `DB_PASSWORD`/`MYSQL_PWD` if your MySQL root user has a password.
 
 The Phase 2 CRM workflow has its own suite, `e2e/crm.cjs` (18 checks: lead creation incl. double-click, duplicates, search, Kanban move by select and drag-and-drop, activities, follow-ups, assignment, archive/restore, cross-tenant URL probing, mobile layout). Same setup, on a freshly seeded database:
 ```bash
 BASE_URL=http://127.0.0.1:8766 E2E_DB=shvet_crm_e2e npm run e2e:crm
 ```
 
-The Meta Lead Ads suite (`e2e/meta.cjs`, 13 checks) runs against a **mock** Graph server and needs extra env (`META_*`, `QUEUE_CONNECTION=sync`); setup is in the file header: `npm run e2e:meta`.
+The Meta Lead Ads suite (`e2e/meta.cjs`, 13 checks) runs against a **mock** Graph server and needs extra env (`META_*`, `QUEUE_CONNECTION=sync`); setup is in the file header: `npm run e2e:meta`. The WhatsApp suite (`e2e/whatsapp.cjs`, 10 checks: connect, inbound webhook, auto-created lead, reply, template outside the 24-hour window, opt-out, agent visibility) uses the same mock server; `bash e2e/run.sh meta whatsapp` sets everything up.
 
 ## Tenancy rules for contributors
 1. Every tenant-owned model uses `App\Tenancy\BelongsToTenant` (an architecture test enforces it for any model with a `tenant_id` column).

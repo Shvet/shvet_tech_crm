@@ -38,6 +38,7 @@ http.createServer((req, res) => {
     if (path === '/__mock/reset') {
         state.leads = {};
         state.calls = [];
+        state.sent = [];
         return json(res, { ok: true });
     }
 
@@ -55,6 +56,24 @@ http.createServer((req, res) => {
     if (path === '/me') return json(res, { id: 'mockuser', name: 'Mock Page Admin' });
     if (path === '/me/accounts') return json(res, { data: [PAGE] });
     if (path.endsWith('/subscribed_apps')) return json(res, { success: true });
+
+    // WhatsApp Cloud API (mock). The mock number is 110000000000001 in WABA 220000000000001.
+    if (path === '/110000000000001' && req.method === 'GET') return json(res, { id: '110000000000001', display_phone_number: '+91 22 4000 0000', verified_name: 'Mock Realty' });
+    if (path === '/220000000000001/phone_numbers') return json(res, { data: [{ id: '110000000000001' }] });
+    if (path === '/220000000000001/message_templates') {
+        return json(res, { data: [{ name: 'follow_up', language: 'en', status: 'APPROVED', category: 'MARKETING', components: [{ type: 'BODY', text: 'Hi {{1}}, thanks for asking about {{2}}.' }] }] });
+    }
+    if (path === '/110000000000001/messages' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => (body += c));
+        req.on('end', () => {
+            state.sent = state.sent || [];
+            state.sent.push(JSON.parse(body));
+            json(res, { messaging_product: 'whatsapp', messages: [{ id: `wamid.MOCK${Date.now()}${state.sent.length}` }] });
+        });
+        return;
+    }
+    if (path === '/__mock/sent') return json(res, state.sent || []);
     if (path.endsWith('/leadgen_forms')) return json(res, { data: [{ id: '700000000000001', name: 'Mock Diwali form', status: 'ACTIVE' }] });
 
     const id = path.slice(1);

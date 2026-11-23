@@ -14,8 +14,10 @@ export const NAV_ITEMS = [
     { href: '/leads', label: 'Leads', anyOf: VIEW_LEADS },
     { href: '/pipeline', label: 'Pipeline', anyOf: VIEW_LEADS },
     { href: '/tasks', label: 'Follow-ups', anyOf: ['tasks.manage'] },
+    { href: '/inbox', label: 'WhatsApp inbox', anyOf: ['conversations.view'] },
     { href: '/team', label: 'Team', anyOf: ['users.view'] },
     { href: '/integrations/meta', label: 'Meta Lead Ads', anyOf: ['integrations.manage'] },
+    { href: '/integrations/whatsapp', label: 'WhatsApp setup', anyOf: ['integrations.manage'] },
 ] as const;
 
 export function visibleNav(permissions: string[] | undefined) {

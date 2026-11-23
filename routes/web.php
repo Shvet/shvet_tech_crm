@@ -16,6 +16,8 @@ use App\Http\Controllers\PipelineController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\WhatsApp\InboxController;
+use App\Http\Controllers\WhatsApp\WhatsAppIntegrationController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Session\Middleware\AuthenticateSession;
@@ -78,6 +80,20 @@ Route::middleware(['auth', EnsureUserIsActive::class, AuthenticateSession::class
         Route::delete('/team/members/{membership}', [TeamController::class, 'destroy'])->name('team.destroy');
 
         // Meta Lead Ads (Admin only: every action authorizes integrations.manage). Route params are tenant-scoped public ids.
+        Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+        Route::get('/inbox/{conversation}', [InboxController::class, 'show'])->name('inbox.show');
+        Route::post('/inbox/{conversation}/messages', [InboxController::class, 'send'])->middleware('throttle:whatsapp-send')->name('inbox.send');
+        Route::post('/inbox/{conversation}/link', [InboxController::class, 'link'])->name('inbox.link');
+
+        Route::prefix('integrations/whatsapp')->name('integrations.whatsapp.')->group(function () {
+            Route::get('/', [WhatsAppIntegrationController::class, 'index'])->name('index');
+            Route::post('/', [WhatsAppIntegrationController::class, 'connect'])->middleware('throttle:meta-admin')->name('connect');
+            Route::patch('/{whatsappAccount}', [WhatsAppIntegrationController::class, 'update'])->name('update');
+            Route::post('/{whatsappAccount}/templates', [WhatsAppIntegrationController::class, 'syncTemplates'])->middleware('throttle:meta-admin')->name('templates');
+            Route::post('/{whatsappAccount}/validate', [WhatsAppIntegrationController::class, 'validateAccount'])->middleware('throttle:meta-admin')->name('validate');
+            Route::delete('/{whatsappAccount}', [WhatsAppIntegrationController::class, 'disconnect'])->name('disconnect');
+        });
+
         Route::prefix('integrations/meta')->name('integrations.meta.')->group(function () {
             Route::get('/', [MetaIntegrationController::class, 'index'])->name('index');
             Route::post('/connect', [MetaIntegrationController::class, 'connect'])->middleware('throttle:meta-admin')->name('connect');
