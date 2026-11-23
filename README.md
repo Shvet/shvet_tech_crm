@@ -50,7 +50,7 @@ DB_PASSWORD=...
 ```
 **MySQL trigger privilege.** The audit log is made append-only with MySQL triggers (`2026_10_27_000500_protect_audit_logs`). With binary logging enabled (the MySQL 8 default) creating triggers needs the `SUPER` privilege or `log_bin_trust_function_creators=1` for the account that runs migrations. Run migrations as a privileged deploy account, never as the runtime application account.
 
-**Static analysis.** `phpstan.neon` (Larastan, level 5) is wired into CI as a *non-blocking* step. It could not be installed or run in the authoring sandbox, so it is unverified: run `composer require --dev larastan/larastan && vendor/bin/phpstan analyse` once on a normal machine, fix or baseline the findings, then remove `continue-on-error` from `.github/workflows/ci.yml`.
+**Static analysis.** Larastan (level 5, `phpstan.neon`) is a blocking CI step. The 83 findings that existed when it was switched on are listed in `phpstan-baseline.neon`; new code must not add findings. Locally: `composer require --dev larastan/larastan && vendor/bin/phpstan analyse` (do not commit the composer change).
 
 ### Browser smoke tests (Playwright)
 `e2e/smoke.cjs` drives real Chromium through login, throttling, password reset, invitations, workspace switching, role enforcement, suspend/remove, session invalidation, CSP and mobile layout (27 checks). It mutates data, so use a throwaway database, a non-`local` `APP_ENV` (so the strict CSP is active) and the log mailer:
@@ -63,7 +63,7 @@ cd public && APP_ENV=staging APP_DEBUG=false APP_URL=http://127.0.0.1:8766 DB_DA
   php -S 127.0.0.1:8766 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php &
 cd .. && BASE_URL=http://127.0.0.1:8766 MAIL_LOG=storage/logs/mail.log npm run e2e
 ```
-It is not part of CI yet (needs a pinned Playwright dependency and browsers).
+`bash e2e/run.sh smoke crm` does all of the above (fresh database per suite, server start/stop) and is what CI's `e2e` job runs. Set `DB_PASSWORD`/`MYSQL_PWD` if your MySQL root user has a password.
 
 The Phase 2 CRM workflow has its own suite, `e2e/crm.cjs` (18 checks: lead creation incl. double-click, duplicates, search, Kanban move by select and drag-and-drop, activities, follow-ups, assignment, archive/restore, cross-tenant URL probing, mobile layout). Same setup, on a freshly seeded database:
 ```bash
@@ -102,7 +102,7 @@ Tick every box on the production host before real users are invited. **Any untic
 | 1 | `php artisan crm:preflight` exits 0 with no CRITICAL items | Blocker | run on the production host with production env |
 | 2 | `php artisan test`, `pint --test`, `npm test`, `typecheck`, `build`, `composer audit`, `npm audit` all green in CI on the release commit | Blocker | CI run link |
 | 3 | `npm run e2e` (27/27) passes against a staging copy running a non-local `APP_ENV` | Blocker | script output |
-| 4 | Larastan step run green once and made blocking | Should | CI |
+| 4 | Larastan step blocking and green (done 2026-11-23, with a baseline of pre-existing findings) | Should | CI |
 | 5 | Runtime DB account is not root and cannot `DROP TRIGGER`/DDL; audit triggers present (`SHOW TRIGGERS LIKE 'audit_logs'`) | Blocker | MySQL |
 | 6 | `TRUSTED_PROXIES` set; `/up` and a login attempt show the real client IP in the audit log | Blocker | audit row `ip_address` |
 | 7 | Response headers on `/login`: CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, HSTS (over HTTPS); session cookie `Secure; HttpOnly; SameSite=Lax` | Blocker | `curl -I`, browser devtools |
