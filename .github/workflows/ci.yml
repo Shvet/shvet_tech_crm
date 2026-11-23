@@ -38,17 +38,14 @@ jobs:
       - run: composer audit
       - run: vendor/bin/pint --test
       - run: php artisan test
-      # Static analysis. Larastan is installed here rather than in composer.json because its PHAR dependency cannot be
-      # downloaded in the authoring sandbox. TEMPORARY: print a baseline of today's findings so it can be committed.
-      - name: Static analysis (Larastan, level 5) - generate baseline
-        continue-on-error: true
+      # Static analysis gate. Larastan is installed here rather than in composer.json because its PHAR dependency
+      # cannot be downloaded in the authoring sandbox. Pre-existing findings live in phpstan-baseline.neon;
+      # anything new fails the build.
+      - name: Static analysis (Larastan, level 5)
         run: |
           composer require --dev larastan/larastan --no-interaction --no-progress
           mkdir -p storage/framework/phpstan
-          vendor/bin/phpstan analyse --no-progress --memory-limit=1G --generate-baseline=phpstan-baseline.neon --allow-empty-baseline
-          echo '----- BEGIN BASELINE -----'
-          cat phpstan-baseline.neon
-          echo '----- END BASELINE -----'
+          vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
   frontend:
     runs-on: ubuntu-24.04

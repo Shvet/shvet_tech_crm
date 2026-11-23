@@ -1,5 +1,8 @@
 includes:
     - vendor/larastan/larastan/extension.neon
+    # Findings that existed when the gate was switched on (2026-11-23). Fix them over time; never add to this file
+    # by hand to silence new code.
+    - phpstan-baseline.neon
 
 parameters:
     level: 5
