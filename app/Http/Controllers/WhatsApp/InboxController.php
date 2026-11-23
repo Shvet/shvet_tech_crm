@@ -126,7 +126,7 @@ class InboxController extends Controller
     {
         return [
             'id' => $c->public_id,
-            'name' => $c->lead?->full_name ?? $c->contact->profile_name ?? '+'.$c->contact->wa_id,
+            'name' => $c->lead !== null ? $c->lead->full_name : ($c->contact->profile_name ?? '+'.$c->contact->wa_id),
             'phone' => '+'.$c->contact->wa_id,
             'lead' => $c->lead ? ['id' => $c->lead->public_id, 'name' => $c->lead->full_name] : null,
             'link_status' => $c->link_status,
