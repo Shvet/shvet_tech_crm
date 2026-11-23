@@ -3,9 +3,11 @@
 namespace App\Actions\WhatsApp;
 
 use App\Actions\Leads\CreateLead;
+use App\Enums\MembershipStatus;
 use App\Exceptions\DuplicateLeadException;
 use App\Models\Lead;
 use App\Models\LeadSource;
+use App\Models\TenantMembership;
 use App\Models\User;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppContact;
@@ -14,7 +16,6 @@ use App\Services\Leads\PhoneNormalizer;
 use App\Services\WhatsApp\WhatsAppLog;
 use App\Support\AuditLogger;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Connects a WhatsApp conversation (and its contact) to a CRM lead.
@@ -103,13 +104,13 @@ class LinkConversationToLead
             'external_id' => $contact->wa_id,
         ];
 
+        // The default owner may have left the workspace since it was chosen: then the lead stays unassigned for a manager.
+        if ($data['owner_id'] !== null && ! TenantMembership::query()->where('user_id', $data['owner_id'])->where('status', MembershipStatus::Active->value)->exists()) {
+            $data['owner_id'] = null;
+        }
+
         try {
-            try {
-                $lead = $this->createLead->import($data)['lead'];
-            } catch (ValidationException) {
-                // The default owner is no longer an active member: create it unassigned for a manager to pick up.
-                $lead = $this->createLead->import(['owner_id' => null] + $data)['lead'];
-            }
+            $lead = $this->createLead->import($data)['lead'];
         } catch (DuplicateLeadException) {
             return null; // a lead appeared meanwhile; the next message links it
         }

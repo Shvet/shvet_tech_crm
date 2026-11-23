@@ -6,8 +6,21 @@ use App\Tenancy\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
-/** A message template synced from Meta. Only APPROVED templates can be sent. */
+/**
+ * A message template synced from Meta. Only APPROVED templates can be sent.
+ *
+ * @property int $id
+ * @property int $whatsapp_account_id
+ * @property string $name
+ * @property string $language
+ * @property string|null $category
+ * @property string $status
+ * @property array<int, mixed>|null $components
+ * @property int $body_param_count
+ * @property Carbon $synced_at
+ */
 #[Fillable(['whatsapp_account_id', 'name', 'language', 'category', 'status', 'components', 'body_param_count', 'synced_at'])]
 class WhatsAppTemplate extends Model
 {
@@ -37,6 +50,7 @@ class WhatsAppTemplate extends Model
         return null;
     }
 
+    /** @return BelongsTo<WhatsAppAccount, $this> */
     public function account(): BelongsTo
     {
         return $this->belongsTo(WhatsAppAccount::class, 'whatsapp_account_id');

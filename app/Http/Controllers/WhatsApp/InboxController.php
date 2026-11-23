@@ -14,6 +14,7 @@ use App\Models\WhatsAppMessage;
 use App\Models\WhatsAppTemplate;
 use App\Services\Leads\LeadVisibility;
 use App\Services\WhatsApp\ConversationVisibility;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -75,6 +76,7 @@ class InboxController extends Controller
         Gate::authorize('link', $conversation);
 
         $data = $request->validate(['lead_id' => ['required', 'string', 'size:26']]);
+        /** @var Lead|null $lead */
         $lead = LeadVisibility::scope(Lead::query(), $request->user())->where('leads.public_id', $data['lead_id'])->first();
         if (! $lead) {
             return back()->withErrors(['lead_id' => 'Choose a lead you can see.']);
@@ -147,9 +149,10 @@ class InboxController extends Controller
 
         $candidates = [];
         if (Gate::allows('link', $c) && $c->link_status !== WhatsAppConversation::LINKED) {
-            $candidates = LeadVisibility::scope(Lead::query(), $user)
-                ->where('phone_e164', '+'.$c->contact->wa_id)->orderBy('id')->limit(10)->get(['public_id', 'full_name'])
-                ->map(fn (Lead $l) => ['id' => $l->public_id, 'name' => $l->full_name])->values()->all();
+            /** @var Collection<int, Lead> $matches */
+            $matches = LeadVisibility::scope(Lead::query(), $user)
+                ->where('phone_e164', '+'.$c->contact->wa_id)->orderBy('id')->limit(10)->get(['public_id', 'full_name']);
+            $candidates = $matches->map(fn (Lead $l) => ['id' => $l->public_id, 'name' => $l->full_name])->values()->all();
         }
 
         return [
@@ -166,7 +169,7 @@ class InboxController extends Controller
                 'status' => $m->status->value,
                 'error' => $m->error_title,
                 'sender' => $m->sender?->name,
-                'at' => ($m->provider_timestamp ?? $m->created_at)?->toIso8601String(),
+                'at' => ($m->provider_timestamp ?? $m->created_at)->toIso8601String(),
             ])->values(),
             'templates' => $templates->map(fn (WhatsAppTemplate $t) => [
                 'id' => $t->id, 'name' => $t->name, 'language' => $t->language, 'params' => $t->body_param_count, 'body' => $t->bodyText(),

@@ -43,7 +43,7 @@ class WhatsAppWebhookController extends Controller
 
         $max = (int) config('whatsapp.webhook_max_bytes', 262144);
         $raw = $request->getContent();
-        if ((int) $request->header('Content-Length', 0) > $max || strlen($raw) > $max) {
+        if ((int) $request->header('Content-Length') > $max || strlen($raw) > $max) {
             return response('Payload too large', 413);
         }
 

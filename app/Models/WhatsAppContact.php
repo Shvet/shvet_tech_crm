@@ -6,8 +6,19 @@ use App\Tenancy\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
-/** A person who has messaged (or been messaged by) the workspace on WhatsApp. wa_id is Meta's id for them. */
+/**
+ * A person who has messaged (or been messaged by) the workspace on WhatsApp. wa_id is Meta's id for them.
+ *
+ * @property int $id
+ * @property int $tenant_id
+ * @property string $wa_id
+ * @property string|null $phone_e164
+ * @property string|null $profile_name
+ * @property int|null $lead_id
+ * @property Carbon|null $opted_out_at
+ */
 #[Fillable(['wa_id', 'phone_e164', 'profile_name', 'lead_id', 'opted_out_at'])]
 class WhatsAppContact extends Model
 {
@@ -25,6 +36,7 @@ class WhatsAppContact extends Model
         return $this->opted_out_at !== null;
     }
 
+    /** @return BelongsTo<Lead, $this> */
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);

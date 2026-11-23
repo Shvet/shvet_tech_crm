@@ -19,6 +19,10 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class ConversationVisibility
 {
+    /**
+     * @param  Builder<WhatsAppConversation>  $query
+     * @return Builder<WhatsAppConversation>
+     */
     public static function scope(Builder $query, User $user): Builder
     {
         if (! $user->checkPermissionTo(Permission::ConversationsView->value)) {
