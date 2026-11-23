@@ -63,7 +63,7 @@ cd public && APP_ENV=staging APP_DEBUG=false APP_URL=http://127.0.0.1:8766 DB_DA
   php -S 127.0.0.1:8766 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php &
 cd .. && BASE_URL=http://127.0.0.1:8766 MAIL_LOG=storage/logs/mail.log npm run e2e
 ```
-It is not part of CI yet (needs a pinned Playwright dependency and browsers).
+`bash e2e/run.sh smoke crm` does all of the above (fresh database per suite, server start/stop) and is what CI's `e2e` job runs. Set `DB_PASSWORD`/`MYSQL_PWD` if your MySQL root user has a password.
 
 The Phase 2 CRM workflow has its own suite, `e2e/crm.cjs` (18 checks: lead creation incl. double-click, duplicates, search, Kanban move by select and drag-and-drop, activities, follow-ups, assignment, archive/restore, cross-tenant URL probing, mobile layout). Same setup, on a freshly seeded database:
 ```bash

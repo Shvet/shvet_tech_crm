@@ -38,15 +38,17 @@ jobs:
       - run: composer audit
       - run: vendor/bin/pint --test
       - run: php artisan test
-      # Static analysis. Larastan could not be installed in the authoring sandbox (GitHub archive downloads were
-      # blocked), so this step and phpstan.neon are UNVERIFIED. It is non-blocking until it has run green once;
-      # then delete `continue-on-error` to make it a real gate.
-      - name: Static analysis (Larastan, level 5)
+      # Static analysis. Larastan is installed here rather than in composer.json because its PHAR dependency cannot be
+      # downloaded in the authoring sandbox. TEMPORARY: print a baseline of today's findings so it can be committed.
+      - name: Static analysis (Larastan, level 5) - generate baseline
         continue-on-error: true
         run: |
           composer require --dev larastan/larastan --no-interaction --no-progress
           mkdir -p storage/framework/phpstan
-          vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+          vendor/bin/phpstan analyse --no-progress --memory-limit=1G --generate-baseline=phpstan-baseline.neon --allow-empty-baseline
+          echo '----- BEGIN BASELINE -----'
+          cat phpstan-baseline.neon
+          echo '----- END BASELINE -----'
 
   frontend:
     runs-on: ubuntu-24.04
@@ -64,3 +66,48 @@ jobs:
         env:
           LARAVEL_BYPASS_ENV_CHECK: '1'
       - run: npm run build
+
+  # Browser suites (Playwright + Chromium) against a seeded throwaway database, strict CSP (non-local APP_ENV).
+  e2e:
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -proot" --health-interval=10s --health-timeout=5s --health-retries=10
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PWD: root
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, pdo_mysql
+          coverage: none
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env && php artisan key:generate
+      - run: npm ci
+      - run: npm run build
+      - run: npm install --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
+      - run: bash e2e/run.sh smoke crm
+      - name: Upload screenshots and server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: |
+            storage/e2e-screenshots
+            storage/logs/e2e-server.log
+          retention-days: 7
