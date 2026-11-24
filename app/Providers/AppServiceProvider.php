@@ -8,8 +8,12 @@ use App\Models\MetaConnection;
 use App\Models\MetaFormMapping;
 use App\Models\MetaLeadEvent;
 use App\Models\MetaPage;
+use App\Models\WhatsAppAccount;
+use App\Models\WhatsAppConversation;
 use App\Policies\MetaIntegrationPolicy;
+use App\Policies\WhatsAppPolicy;
 use App\Services\Leads\LeadVisibility;
+use App\Services\WhatsApp\ConversationVisibility;
 use App\Support\Facades\Tenancy;
 use App\Support\ProductionSafeguards;
 use App\Tenancy\TenancyManager;
@@ -53,6 +57,17 @@ class AppServiceProvider extends ServiceProvider
         Route::model('metaMapping', MetaFormMapping::class);
         Route::model('metaEvent', MetaLeadEvent::class);
         Gate::policy(MetaConnection::class, MetaIntegrationPolicy::class);
+        Gate::policy(WhatsAppAccount::class, WhatsAppPolicy::class);
+        Gate::policy(WhatsAppConversation::class, WhatsAppPolicy::class);
+        Route::pattern('whatsappAccount', '[0-9A-HJKMNP-TV-Z]{26}');
+        Route::pattern('conversation', '[0-9A-HJKMNP-TV-Z]{26}');
+        Route::model('whatsappAccount', WhatsAppAccount::class);
+        // Conversations resolve through visibility too: someone else's chat is a 404, not a 403.
+        Route::bind('conversation', function (string $value) {
+            $user = auth()->user() ?? abort(401);
+
+            return ConversationVisibility::scope(WhatsAppConversation::query(), $user)->where('whatsapp_conversations.public_id', $value)->firstOrFail();
+        });
 
         // Resolve through VISIBILITY, inside the tenant: a lead/task the user may not see is indistinguishable from a missing one.
         Route::bind('lead', function (string $value) {
@@ -76,6 +91,8 @@ class AppServiceProvider extends ServiceProvider
         // every route that uses it, so login failures would eat into the password-reset budget and vice versa.)
         // Meta webhooks: signature checking is the real gate; these only cap abuse per source IP.
         RateLimiter::for('meta-webhook', fn (Request $request) => Limit::perMinute(600)->by('meta-webhook|'.$request->ip()));
+        RateLimiter::for('whatsapp-webhook', fn (Request $request) => Limit::perMinute(1200)->by('whatsapp-webhook|'.$request->ip()));
+        RateLimiter::for('whatsapp-send', fn (Request $request) => Limit::perMinute(60)->by('whatsapp-send|'.Tenancy::id().'|'.$request->user()?->getKey()));
         // Admin-initiated calls that hit Meta's API: per user, so a stuck button cannot burn the app's rate budget.
         RateLimiter::for('meta-admin', fn (Request $request) => Limit::perMinute(20)->by('meta-admin|'.Tenancy::id().'|'.$request->user()?->getKey()));
         RateLimiter::for('meta-webhook-verify', fn (Request $request) => Limit::perMinute(30)->by('meta-webhook-verify|'.$request->ip()));

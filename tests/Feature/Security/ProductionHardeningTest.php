@@ -51,6 +51,18 @@ class ProductionHardeningTest extends TestCase
         }
     }
 
+    public function test_a_weak_or_orphaned_whatsapp_verify_token_is_critical(): void
+    {
+        $this->goodProductionConfig();
+        config(['whatsapp.webhook_verify_token' => 'short', 'meta.app_secret' => '', 'meta.graph_version' => '']);
+        $joined = implode(' | ', ProductionSafeguards::critical());
+        $this->assertStringContainsString('WHATSAPP_WEBHOOK_VERIFY_TOKEN', $joined);
+        $this->assertStringContainsString('META_APP_SECRET', $joined);
+
+        config(['whatsapp.webhook_verify_token' => str_repeat('x', 32), 'meta.app_secret' => 'secret', 'meta.graph_version' => 'v25.0']);
+        $this->assertSame([], array_values(array_filter(ProductionSafeguards::critical(), fn ($p) => str_contains($p, 'WhatsApp') || str_contains($p, 'WHATSAPP'))));
+    }
+
     public function test_preflight_command_fails_on_bad_config_and_passes_on_good_config(): void
     {
         $this->goodProductionConfig();

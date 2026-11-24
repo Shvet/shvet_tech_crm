@@ -2,7 +2,7 @@ import { useRef, useState, type AnchorHTMLAttributes, type ReactNode } from 'rea
 import { vi } from 'vitest';
 
 /** Minimal stand-in for @inertiajs/react: records navigation and form submissions so tests can assert on them. */
-export const router = { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn() };
+export const router = { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn(), reload: vi.fn() };
 
 export const submissions: { method: string; url: string; data: Record<string, unknown> }[] = [];
 export const formControl = { processing: false, errors: {} as Record<string, string> };

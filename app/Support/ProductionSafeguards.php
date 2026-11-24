@@ -53,6 +53,17 @@ class ProductionSafeguards
             }
         }
 
+        // WhatsApp is optional too. Its webhook signatures are checked with the platform Meta app secret.
+        $whatsAppToken = (string) config('whatsapp.webhook_verify_token');
+        if ($whatsAppToken !== '') {
+            if (strlen($whatsAppToken) < 24) {
+                $problems[] = 'WHATSAPP_WEBHOOK_VERIFY_TOKEN must be at least 24 random characters';
+            }
+            if ((string) config('meta.app_secret') === '' || (string) config('meta.graph_version') === '') {
+                $problems[] = 'WhatsApp needs META_APP_SECRET and META_GRAPH_VERSION (webhook signatures and API calls use the platform Meta app)';
+            }
+        }
+
         return $problems;
     }
 

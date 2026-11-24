@@ -191,21 +191,28 @@ class GraphClient
             return $body;
         }
 
-        $error = is_array($body['error'] ?? null) ? $body['error'] : [];
+        throw self::errorFrom($response);
+    }
+
+    /** Turns a failed Graph response into a sanitized MetaApiException. Shared with the WhatsApp Cloud API client. */
+    public static function errorFrom(Response $response): MetaApiException
+    {
+        $body = $response->json();
+        $error = is_array($body) && is_array($body['error'] ?? null) ? $body['error'] : [];
         $code = isset($error['code']) ? (int) $error['code'] : null;
         $subcode = isset($error['error_subcode']) ? (int) $error['error_subcode'] : null;
 
-        throw new MetaApiException(
-            $this->classify($response->status(), $code),
+        return new MetaApiException(
+            self::classify($response->status(), $code),
             $response->status() ?: null,
             $code,
             $subcode,
-            $this->retryAfter($response),
+            self::retryAfter($response),
             isset($error['fbtrace_id']) ? (string) $error['fbtrace_id'] : null,
         );
     }
 
-    private function classify(int $status, ?int $code): string
+    private static function classify(int $status, ?int $code): string
     {
         return match (true) {
             $code === 190 => MetaApiException::AUTH,
@@ -221,7 +228,7 @@ class GraphClient
     }
 
     /** Honor Retry-After, or Meta's business-use-case "estimated_time_to_regain_access" (minutes). */
-    private function retryAfter(Response $response): ?int
+    private static function retryAfter(Response $response): ?int
     {
         $retry = $response->header('Retry-After');
         if (is_numeric($retry) && (int) $retry > 0) {
@@ -233,7 +240,7 @@ class GraphClient
             if (! is_array($decoded)) {
                 continue;
             }
-            $minutes = $this->findKey($decoded, 'estimated_time_to_regain_access');
+            $minutes = self::findKey($decoded, 'estimated_time_to_regain_access');
             if (is_numeric($minutes) && (int) $minutes > 0) {
                 return min((int) $minutes * 60, 86400);
             }
@@ -242,13 +249,13 @@ class GraphClient
         return null;
     }
 
-    private function findKey(array $haystack, string $key): mixed
+    private static function findKey(array $haystack, string $key): mixed
     {
         foreach ($haystack as $k => $v) {
             if ($k === $key) {
                 return $v;
             }
-            if (is_array($v) && ($found = $this->findKey($v, $key)) !== null) {
+            if (is_array($v) && ($found = self::findKey($v, $key)) !== null) {
                 return $found;
             }
         }

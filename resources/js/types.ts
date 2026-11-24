@@ -187,3 +187,46 @@ export interface MetaSetup {
     webhook_url: string;
     permissions: string[];
 }
+
+export interface ConversationSummary {
+    id: string;
+    name: string;
+    phone: string;
+    lead: { id: string; name: string } | null;
+    link_status: 'linked' | 'unlinked' | 'ambiguous';
+    unread: number;
+    last_message_at: string | null;
+    opted_out: boolean;
+}
+
+export interface WhatsAppMessageRow {
+    id: string;
+    direction: 'in' | 'out';
+    kind: string;
+    body: string | null;
+    template_name: string | null;
+    status: 'queued' | 'sent' | 'delivered' | 'read' | 'failed' | 'received';
+    error: string | null;
+    sender: string | null;
+    at: string | null;
+}
+
+export interface WhatsAppTemplateRow {
+    id: number;
+    name: string;
+    language: string;
+    params: number;
+    body: string | null;
+    category?: string | null;
+    status?: string;
+}
+
+export interface ConversationDetail extends ConversationSummary {
+    window_open: boolean;
+    window_closes_at: string | null;
+    account_active: boolean;
+    messages: WhatsAppMessageRow[];
+    templates: WhatsAppTemplateRow[];
+    link_candidates: { id: string; name: string }[];
+    can: { reply: boolean; link: boolean };
+}

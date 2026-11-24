@@ -15,10 +15,12 @@ use App\Http\Resources\TaskResource;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadStageHistory;
+use App\Models\WhatsAppConversation;
 use App\Services\Leads\DuplicatePresenter;
 use App\Services\Leads\LeadOptions;
 use App\Services\Leads\LeadSearch;
 use App\Services\Leads\LeadVisibility;
+use App\Services\WhatsApp\ConversationVisibility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -108,6 +110,8 @@ class LeadController extends Controller
                 'priorities' => Priority::values(),
             ],
             'viewer_id' => $user->getKey(),
+            'whatsapp_conversation_id' => ConversationVisibility::scope(WhatsAppConversation::query(), $user)
+                ->where('whatsapp_conversations.lead_id', $lead->getKey())->orderByDesc('last_message_at')->value('public_id'),
         ]);
     }
 

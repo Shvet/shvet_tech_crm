@@ -9,7 +9,8 @@
         "test": "vitest run",
         "e2e": "node e2e/smoke.cjs",
         "e2e:crm": "node e2e/crm.cjs",
-        "e2e:meta": "node e2e/meta.cjs"
+        "e2e:meta": "node e2e/meta.cjs",
+        "e2e:whatsapp": "node e2e/whatsapp.cjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

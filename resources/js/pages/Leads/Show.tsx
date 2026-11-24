@@ -13,6 +13,7 @@ interface Props {
     tasks: Task[];
     options: { stages: Stage[]; owners: Option[]; assignees: Option[]; activity_types: string[]; priorities: string[] };
     viewer_id: number;
+    whatsapp_conversation_id?: string | null;
 }
 
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
@@ -108,7 +109,7 @@ function TaskForm({ lead, assignees, priorities, viewerId, timeZone }: { lead: L
     );
 }
 
-export default function Show({ lead, timeline, tasks, options, viewer_id }: Props) {
+export default function Show({ lead, timeline, tasks, options, viewer_id, whatsapp_conversation_id }: Props) {
     const { tenant } = usePage<SharedProps>().props;
     const tz = tenant?.timezone ?? 'Asia/Kolkata';
     const can = lead.can!;
@@ -161,7 +162,14 @@ export default function Show({ lead, timeline, tasks, options, viewer_id }: Prop
                     <div className="space-y-4 lg:col-span-1">
                         <Card title="Details">
                             <dl className="space-y-3">
-                                <Detail label="Phone">{lead.phone ?? '—'}</Detail>
+                                <Detail label="Phone">
+                                    {lead.phone ?? '—'}
+                                    {whatsapp_conversation_id && (
+                                        <Link href={`/inbox/${whatsapp_conversation_id}`} className="ml-2 text-sm font-medium text-green-700 hover:underline">
+                                            WhatsApp chat
+                                        </Link>
+                                    )}
+                                </Detail>
                                 <Detail label="E-mail">{lead.email ?? '—'}</Detail>
                                 <Detail label="Company">{lead.company_name ?? '—'}</Detail>
                                 <Detail label="Source">{lead.source?.name ?? '—'}</Detail>
