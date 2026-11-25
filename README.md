@@ -8,6 +8,7 @@ Multi-tenant, lightweight CRM: Meta (Facebook/Instagram) Lead Ads, WhatsApp Busi
 - Meta & WhatsApp prerequisites: [`docs/INTEGRATION_REQUIREMENTS.md`](docs/INTEGRATION_REQUIREMENTS.md)
 - Phase 2 CRM workflow: [`docs/PHASE_2_CRM_WORKFLOW.md`](docs/PHASE_2_CRM_WORKFLOW.md)
 - Phase 3 Meta Lead Ads (prerequisites, security, operations, privacy, go/no-go): [`docs/PHASE_3_META_LEAD_ADS.md`](docs/PHASE_3_META_LEAD_ADS.md)
+- Meta app setup (policy URLs, data deletion callback, use cases and permissions for App Review): [`docs/META_APP_REVIEW.md`](docs/META_APP_REVIEW.md)
 - Phase 4 WhatsApp inbox (setup, behaviour, limitations, go/no-go): [`docs/PHASE_4_WHATSAPP.md`](docs/PHASE_4_WHATSAPP.md)
 
 ## Stack

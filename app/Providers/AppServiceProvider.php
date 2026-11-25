@@ -95,6 +95,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('whatsapp-send', fn (Request $request) => Limit::perMinute(60)->by('whatsapp-send|'.Tenancy::id().'|'.$request->user()?->getKey()));
         // Admin-initiated calls that hit Meta's API: per user, so a stuck button cannot burn the app's rate budget.
         RateLimiter::for('meta-admin', fn (Request $request) => Limit::perMinute(20)->by('meta-admin|'.Tenancy::id().'|'.$request->user()?->getKey()));
+        RateLimiter::for('meta-data-request', fn (Request $request) => Limit::perMinute(60)->by('meta-data-request|'.$request->ip()));
         RateLimiter::for('meta-webhook-verify', fn (Request $request) => Limit::perMinute(30)->by('meta-webhook-verify|'.$request->ip()));
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(30)->by('login|'.$request->ip()));
         RateLimiter::for('password-reset-request', fn (Request $request) => [

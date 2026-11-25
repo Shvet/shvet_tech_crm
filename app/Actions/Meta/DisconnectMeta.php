@@ -25,10 +25,16 @@ class DisconnectMeta
         $page->delete(); // mappings cascade; the Page id becomes available to be connected again
     }
 
-    public function connection(MetaConnection $connection): void
+    /**
+     * $notifyMeta = false skips the Graph unsubscribe calls: used when Meta itself told us the user removed the app
+     * (deauthorize / data deletion callbacks), where the tokens are already dead and the callback must answer fast.
+     */
+    public function connection(MetaConnection $connection, bool $notifyMeta = true): void
     {
         foreach ($connection->pages()->get() as $page) {
-            $this->unsubscribe($page);
+            if ($notifyMeta) {
+                $this->unsubscribe($page);
+            }
             $page->delete();
         }
 

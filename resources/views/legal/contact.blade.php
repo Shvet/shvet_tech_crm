@@ -1,0 +1,1 @@
+@if ($contactEmail)<a href="mailto:{{ $contactEmail }}">{{ $contactEmail }}</a>@else the contact address published by {{ $company }}@endif

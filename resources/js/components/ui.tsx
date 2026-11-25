@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import LegalFooter from './LegalFooter';
 
 export function Field({ label, error, id, children }: { label: string; error?: string; id: string; children: ReactNode }) {
     return (
@@ -52,11 +53,12 @@ export function StatusBanner({ message }: { message?: string | null }) {
 
 export function GuestCard({ title, children }: { title: string; children: ReactNode }) {
     return (
-        <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-4">
             <div className="w-full max-w-sm space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
                 {children}
             </div>
+            <LegalFooter className="justify-center" />
         </main>
     );
 }
