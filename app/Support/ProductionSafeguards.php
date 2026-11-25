@@ -93,6 +93,9 @@ class ProductionSafeguards
         if (config('permission.teams') !== true) {
             $warnings[] = 'spatie permission teams mode is off: roles would not be tenant-scoped';
         }
+        if (empty(config('legal.contact_email'))) {
+            $warnings[] = 'LEGAL_CONTACT_EMAIL is not set: the privacy policy, terms and data deletion pages have no contact address (Meta App Review rejects that)';
+        }
         if (MetaConfig::isConfigured() && config('queue.default') === 'sync') {
             $warnings[] = 'Meta lead imports need a real queue worker (QUEUE_CONNECTION=sync would import inside the webhook request)';
         }

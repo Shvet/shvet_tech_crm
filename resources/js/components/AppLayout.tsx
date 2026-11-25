@@ -2,6 +2,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import { visibleNav } from '../lib/permissions';
 import type { SharedProps } from '../types';
+import LegalFooter from './LegalFooter';
 import { ErrorBanner, StatusBanner } from './ui';
 
 export default function AppLayout({ title, children }: { title: string; children: ReactNode }) {
@@ -47,6 +48,7 @@ export default function AppLayout({ title, children }: { title: string; children
                 <StatusBanner message={flash?.status} />
                 <ErrorBanner message={errors?.stage ?? errors?.lead ?? errors?.task} />
                 <div className="mt-4">{children}</div>
+                <LegalFooter className="mt-12 border-t border-slate-200 pt-4" />
             </main>
         </div>
     );

@@ -9,6 +9,7 @@ use App\Http\Controllers\LeadArchiveController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadOwnerController;
 use App\Http\Controllers\LeadStageController;
+use App\Http\Controllers\Legal\LegalPageController;
 use App\Http\Controllers\Meta\MetaEventController;
 use App\Http\Controllers\Meta\MetaIntegrationController;
 use App\Http\Controllers\Meta\MetaMappingController;
@@ -24,6 +25,13 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
 
 // There is deliberately no public registration route: users are created by tenant admins / provisioning.
+
+// Public policy pages (Meta App Review: Privacy Policy URL, Terms of Service URL, User data deletion URL).
+// Open to everyone, signed in or not.
+Route::get('/privacy', [LegalPageController::class, 'privacy'])->name('legal.privacy');
+Route::get('/terms', [LegalPageController::class, 'terms'])->name('legal.terms');
+Route::get('/data-deletion', [LegalPageController::class, 'dataDeletion'])->name('legal.data-deletion');
+Route::get('/data-deletion/status', [LegalPageController::class, 'deletionStatus'])->middleware('throttle:30,1')->name('legal.data-deletion.status');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');

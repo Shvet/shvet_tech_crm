@@ -5,3 +5,16 @@
 @theme {
     --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
 }
+
+/* Long-form text on the public policy pages (resources/views/legal). */
+@layer components {
+    .legal-prose { @apply space-y-4 text-[15px] leading-7 text-slate-700; }
+    .legal-prose h2 { @apply pt-4 text-lg font-semibold text-slate-900; }
+    .legal-prose h3 { @apply pt-2 font-semibold text-slate-900; }
+    .legal-prose ul { @apply list-disc space-y-1 pl-6; }
+    .legal-prose ol { @apply list-decimal space-y-1 pl-6; }
+    .legal-prose a { @apply text-indigo-700 underline; }
+    .legal-prose table { @apply w-full border-collapse text-sm; }
+    .legal-prose th, .legal-prose td { @apply border border-slate-200 px-3 py-2 text-left align-top; }
+    .legal-prose th { @apply bg-slate-50 font-semibold text-slate-900; }
+}
