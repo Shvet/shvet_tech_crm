@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
+use App\Enums\Priority;
 use App\Models\Lead;
+use App\Models\LeadSource;
+use App\Models\PipelineStage;
+use App\Models\User;
 use App\Services\Leads\LeadSearch;
 use App\Support\AuditLogger;
 use App\Support\CsvCell;
@@ -51,16 +55,24 @@ class LeadExportController extends Controller
 
             /** @var Lead $lead */
             foreach ($query->lazy(500) as $lead) {
+                /** @var PipelineStage|null $stage */
+                $stage = $lead->stage;
+                /** @var LeadSource|null $source */
+                $source = $lead->source;
+                /** @var User|null $owner */
+                $owner = $lead->owner;
+                /** @var Priority $priority */
+                $priority = $lead->priority;
                 fputcsv($out, array_map([CsvCell::class, 'safe'], [
                     $lead->full_name,
                     $lead->company_name,
                     $lead->email,
                     $lead->phone_e164,
-                    $lead->stage?->name,
-                    $lead->source?->name,
-                    $lead->owner?->email,
-                    $lead->owner?->name,
-                    $lead->priority->value,
+                    $stage?->name,
+                    $source?->name,
+                    $owner?->email,
+                    $owner?->name,
+                    $priority->value,
                     $lead->estimated_value,
                     $date($lead->created_at),
                     $date($lead->last_contacted_at),

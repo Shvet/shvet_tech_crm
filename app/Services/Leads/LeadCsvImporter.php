@@ -178,8 +178,10 @@ class LeadCsvImporter
 
         $owners = [];
         foreach (TenantMembership::query()->where('status', MembershipStatus::Active->value)->with('user:id,email')->get() as $membership) {
-            if ($membership->user) {
-                $owners[mb_strtolower($membership->user->email)] = (int) $membership->user_id;
+            /** @var User|null $member */
+            $member = $membership->user;
+            if ($member) {
+                $owners[mb_strtolower($member->email)] = (int) $membership->user_id;
             }
         }
 

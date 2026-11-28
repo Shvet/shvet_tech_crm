@@ -3,6 +3,8 @@
 namespace App\Notifications;
 
 use App\Models\FollowUpTask;
+use App\Models\Lead;
+use Carbon\CarbonInterface;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Collection;
@@ -20,13 +22,21 @@ class TaskReminderDigest extends Notification
     public function __construct(public string $workspace, Collection $tasks, public int $total, public int $overdue, string $timezone)
     {
         $now = now();
-        $this->items = $tasks->map(fn (FollowUpTask $t) => [
-            'title' => $t->title,
-            'lead' => $t->lead->full_name ?? '',
-            'lead_url' => url('/leads/'.($t->lead->public_id ?? '')),
-            'due' => $t->due_at->copy()->setTimezone($timezone)->format('D j M, H:i'),
-            'overdue' => $t->due_at->lessThan($now),
-        ])->values()->all();
+        $items = [];
+        foreach ($tasks as $t) {
+            /** @var CarbonInterface $due */
+            $due = $t->due_at;
+            /** @var Lead|null $lead */
+            $lead = $t->lead;
+            $items[] = [
+                'title' => (string) $t->title,
+                'lead' => (string) ($lead->full_name ?? ''),
+                'lead_url' => url('/leads/'.($lead->public_id ?? '')),
+                'due' => $due->copy()->setTimezone($timezone)->format('D j M, H:i'),
+                'overdue' => $due->lessThan($now),
+            ];
+        }
+        $this->items = $items;
     }
 
     /** @return list<string> */

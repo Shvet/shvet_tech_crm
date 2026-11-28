@@ -58,7 +58,7 @@ class LeadBulkController extends Controller
                 $did = match ($data['action']) {
                     'assign' => $this->assign($assign, $user, $lead, isset($data['owner_id']) ? (int) $data['owner_id'] : null),
                     'stage' => $changeStage($user, $lead, (int) $data['pipeline_stage_id']),
-                    'archive' => $this->archive($archive, $user, $lead),
+                    default => $this->archive($archive, $user, $lead), // 'archive' (the action is validated above)
                 };
             } catch (ValidationException) {
                 $skipped++;
