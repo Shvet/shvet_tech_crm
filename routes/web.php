@@ -18,6 +18,7 @@ use App\Http\Controllers\Meta\MetaIntegrationController;
 use App\Http\Controllers\Meta\MetaMappingController;
 use App\Http\Controllers\PipelineController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Settings\PipelineSettingsController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\WhatsApp\InboxController;
@@ -83,6 +84,13 @@ Route::middleware(['auth', EnsureUserIsActive::class, AuthenticateSession::class
         Route::post('/leads/{lead}/tasks', [TaskController::class, 'store'])->name('leads.tasks.store');
 
         Route::get('/pipeline', [PipelineController::class, 'index'])->name('pipeline');
+
+        Route::prefix('settings/pipeline')->name('settings.pipeline.')->group(function () {
+            Route::get('/', [PipelineSettingsController::class, 'index'])->name('index');
+            Route::post('/stages', [PipelineSettingsController::class, 'store'])->name('store');
+            Route::patch('/stages/{stage}', [PipelineSettingsController::class, 'update'])->whereNumber('stage')->name('update');
+            Route::put('/order', [PipelineSettingsController::class, 'reorder'])->name('reorder');
+        });
 
         Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
         Route::patch('/tasks/reminders', [TaskController::class, 'reminders'])->name('tasks.reminders');
