@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import AppLayout from '../../components/AppLayout';
 import Pagination from '../../components/Pagination';
 import TaskRow from '../../components/TaskRow';
@@ -12,6 +13,7 @@ interface Props {
     assignee: string;
     counts: { overdue: number; today: number; upcoming: number };
     options: { members: Option[] };
+    reminders?: { enabled: boolean; hour: number };
 }
 
 const TABS: { key: Props['tab']; label: string }[] = [
@@ -28,7 +30,13 @@ const EMPTY: Record<Props['tab'], string> = {
     completed: 'No completed follow-ups yet.',
 };
 
-export default function Index({ tasks, tab, assignee, counts, options }: Props) {
+export default function Index({ tasks, tab, assignee, counts, options, reminders }: Props) {
+    const [remindersOn, setRemindersOn] = useState(reminders?.enabled ?? false);
+    useEffect(() => setRemindersOn(reminders?.enabled ?? false), [reminders?.enabled]);
+    const toggleReminders = (enabled: boolean) => {
+        setRemindersOn(enabled);
+        router.patch('/tasks/reminders', { enabled }, { preserveScroll: true, onError: () => setRemindersOn(!enabled) });
+    };
     const href = (t: string, a: string = assignee) => `/tasks?${new URLSearchParams(cleanQuery({ tab: t, assignee: a === 'me' ? '' : a })).toString()}`;
 
     return (
@@ -80,6 +88,20 @@ export default function Index({ tasks, tab, assignee, counts, options }: Props) 
             <div className="mt-4">
                 <Pagination page={tasks} />
             </div>
+            {reminders && (
+                <div className="mt-6 flex items-start gap-2 text-sm text-slate-700">
+                    <input
+                        id="task-reminders"
+                        type="checkbox"
+                        className="mt-1"
+                        checked={remindersOn}
+                        onChange={(e) => toggleReminders(e.target.checked)}
+                    />
+                    <label htmlFor="task-reminders">
+                        E-mail me a daily summary of my overdue and due-today follow-ups in this workspace (sent from {String(reminders.hour).padStart(2, '0')}:00 workspace time, only on days with something due).
+                    </label>
+                </div>
+            )}
         </AppLayout>
     );
 }

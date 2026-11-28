@@ -7,6 +7,7 @@ use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 /** Search, filter, sort and paginate the leads a user may see. Input is whitelisted, never interpolated. */
@@ -41,10 +42,20 @@ class LeadSearch
 
     public static function paginate(Request $request, User $user): LengthAwarePaginator
     {
-        $f = self::filters($request, $user);
+        return self::query(self::filters($request, $user), $user)
+            ->with(['stage:id,name,key,outcome,color', 'source:id,name,key', 'owner:id,name'])
+            ->paginate((int) config('crm.leads_per_page'))->withQueryString();
+    }
 
-        $query = LeadVisibility::scope(Lead::query(), $user, includeArchived: $f['archived'])
-            ->with(['stage:id,name,key,outcome,color', 'source:id,name,key', 'owner:id,name']);
+    /**
+     * The visible, filtered and ordered leads for these filters (shared by the list, CSV export and bulk actions).
+     *
+     * @param  array{q: string, stage: ?int, source: ?int, owner: ?string, priority: ?string, archived: bool, sort: string, dir: string}  $f
+     * @return Builder<Model>
+     */
+    public static function query(array $f, User $user): Builder
+    {
+        $query = LeadVisibility::scope(Lead::query(), $user, includeArchived: $f['archived']);
 
         if ($f['archived']) {
             $query->whereNotNull('leads.archived_at');
@@ -68,7 +79,7 @@ class LeadSearch
         $column = self::SORTS[$f['sort']];
         $query->orderByRaw("{$column} IS NULL")->orderBy($column, $f['dir'])->orderBy('leads.id', 'desc');
 
-        return $query->paginate((int) config('crm.leads_per_page'))->withQueryString();
+        return $query;
     }
 
     private static function applySearch(Builder $query, string $term): void

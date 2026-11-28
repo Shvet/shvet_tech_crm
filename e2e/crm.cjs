@@ -168,7 +168,7 @@ async function act(page, fn, method, part = '') {
         await agent.page.getByRole('button', { name: 'Clear filters' }).click();
         await agent.page.getByRole('button', { name: /^Name/ }).click();
         await agent.page.waitForURL(/sort=name/);
-        const names = await agent.page.locator('tbody tr td:first-child a').allInnerTexts();
+        const names = await agent.page.locator('tbody tr a[href^="/leads/"]').allInnerTexts();
         assert(JSON.stringify(names) === JSON.stringify([...names].sort((a, b) => a.localeCompare(b))), `not sorted: ${names}`);
     });
 
@@ -285,7 +285,7 @@ async function act(page, fn, method, part = '') {
     await check('another workspace\'s admin sees only their own data and gets 404 for foreign lead URLs', async () => {
         const acme = await session(browser, 'acme-admin', 'admin@acme.test');
         await acme.page.goto('/leads');
-        const names = await acme.page.locator('tbody tr td:first-child a').allInnerTexts();
+        const names = await acme.page.locator('tbody tr a[href^="/leads/"]').allInnerTexts();
         assert(JSON.stringify(names) === JSON.stringify(['Acme Only Lead']), `acme sees ${names}`);
         for (const name of ['Priya Nair', 'Deepa Menon']) {
             const res = await acme.page.goto(`/leads/${leadId(name)}`);

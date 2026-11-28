@@ -94,6 +94,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('whatsapp-webhook', fn (Request $request) => Limit::perMinute(1200)->by('whatsapp-webhook|'.$request->ip()));
         RateLimiter::for('whatsapp-send', fn (Request $request) => Limit::perMinute(60)->by('whatsapp-send|'.Tenancy::id().'|'.$request->user()?->getKey()));
         // Admin-initiated calls that hit Meta's API: per user, so a stuck button cannot burn the app's rate budget.
+        RateLimiter::for('lead-export', fn (Request $request) => Limit::perMinute(10)->by('lead-export|'.Tenancy::id().'|'.$request->user()?->getKey()));
+        RateLimiter::for('lead-import', fn (Request $request) => Limit::perMinute(10)->by('lead-import|'.Tenancy::id().'|'.$request->user()?->getKey()));
+        RateLimiter::for('lead-bulk', fn (Request $request) => Limit::perMinute(30)->by('lead-bulk|'.Tenancy::id().'|'.$request->user()?->getKey()));
         RateLimiter::for('meta-admin', fn (Request $request) => Limit::perMinute(20)->by('meta-admin|'.Tenancy::id().'|'.$request->user()?->getKey()));
         RateLimiter::for('meta-data-request', fn (Request $request) => Limit::perMinute(60)->by('meta-data-request|'.$request->ip()));
         RateLimiter::for('meta-webhook-verify', fn (Request $request) => Limit::perMinute(30)->by('meta-webhook-verify|'.$request->ip()));

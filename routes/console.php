@@ -70,3 +70,7 @@ Artisan::command('tenants:provision {name : Company / workspace name} {admin_ema
 Schedule::command('meta:recover-events')->everyMinute()->withoutOverlapping(10)->onOneServer();
 Schedule::command('meta:validate-connections')->dailyAt('03:17')->withoutOverlapping(60)->onOneServer();
 Schedule::command('meta:prune')->dailyAt('03:47')->withoutOverlapping(60)->onOneServer();
+
+// Daily follow-up reminder e-mails: each tenant gets them from its local crm.reminder_hour; the digest table makes
+// repeated runs harmless, so a quarter-hourly schedule just bounds the delay.
+Schedule::command('crm:send-task-reminders')->everyFifteenMinutes()->withoutOverlapping(30)->onOneServer();

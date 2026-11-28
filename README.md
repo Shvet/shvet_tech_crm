@@ -65,14 +65,14 @@ cd public && APP_ENV=staging APP_DEBUG=false APP_URL=http://127.0.0.1:8766 DB_DA
   php -S 127.0.0.1:8766 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php &
 cd .. && BASE_URL=http://127.0.0.1:8766 MAIL_LOG=storage/logs/mail.log npm run e2e
 ```
-`bash e2e/run.sh smoke crm meta whatsapp` does all of the above (fresh database per suite, server start/stop) and is what CI's `e2e` job runs. Set `DB_PASSWORD`/`MYSQL_PWD` if your MySQL root user has a password.
+`bash e2e/run.sh smoke crm meta whatsapp tools` does all of the above (fresh database per suite, server start/stop) and is what CI's `e2e` job runs. Set `DB_PASSWORD`/`MYSQL_PWD` if your MySQL root user has a password.
 
 The Phase 2 CRM workflow has its own suite, `e2e/crm.cjs` (18 checks: lead creation incl. double-click, duplicates, search, Kanban move by select and drag-and-drop, activities, follow-ups, assignment, archive/restore, cross-tenant URL probing, mobile layout). Same setup, on a freshly seeded database:
 ```bash
 BASE_URL=http://127.0.0.1:8766 E2E_DB=shvet_crm_e2e npm run e2e:crm
 ```
 
-The Meta Lead Ads suite (`e2e/meta.cjs`, 13 checks) runs against a **mock** Graph server and needs extra env (`META_*`, `QUEUE_CONNECTION=sync`); setup is in the file header: `npm run e2e:meta`. The WhatsApp suite (`e2e/whatsapp.cjs`, 10 checks: connect, inbound webhook, auto-created lead, reply, template outside the 24-hour window, opt-out, agent visibility) uses the same mock server; `bash e2e/run.sh meta whatsapp` sets everything up.
+The Meta Lead Ads suite (`e2e/meta.cjs`, 13 checks) runs against a **mock** Graph server and needs extra env (`META_*`, `QUEUE_CONNECTION=sync`); setup is in the file header: `npm run e2e:meta`. The WhatsApp suite (`e2e/whatsapp.cjs`, 10 checks: connect, inbound webhook, auto-created lead, reply, template outside the 24-hour window, opt-out, agent visibility) uses the same mock server; `bash e2e/run.sh meta whatsapp` sets everything up. The CRM tools suite (`e2e/tools.cjs`, 10 checks: CSV export and re-import, bulk actions, reminder toggle, pipeline stages, reports) runs with `bash e2e/run.sh tools`; see [docs/PHASE_5_CRM_TOOLS.md](docs/PHASE_5_CRM_TOOLS.md).
 
 ## Tenancy rules for contributors
 1. Every tenant-owned model uses `App\Tenancy\BelongsToTenant` (an architecture test enforces it for any model with a `tenant_id` column).

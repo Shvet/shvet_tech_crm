@@ -98,7 +98,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm install --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
-      - run: bash e2e/run.sh smoke crm meta whatsapp
+      - run: bash e2e/run.sh smoke crm meta whatsapp tools
       - name: Upload screenshots and server log on failure
         if: failure()
         uses: actions/upload-artifact@v4

@@ -134,7 +134,11 @@ class TenantScopeTest extends TestCase
      */
     public function test_no_unreviewed_cache_storage_or_export_code_exists(): void
     {
-        $reviewed = []; // relative paths that have been reviewed for tenant isolation
+        // relative paths that have been reviewed for tenant isolation
+        $reviewed = [
+            'app/Http/Controllers/LeadExportController.php', // streams inside Tenancy::runAs, rows from LeadVisibility-scoped LeadSearch
+            'app/Http/Controllers/LeadImportController.php', // lock key is t:{tenant}:lead-import:{user}; the upload is read in place, never stored
+        ];
         $offenders = [];
 
         foreach ((new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(app_path()))) as $file) {

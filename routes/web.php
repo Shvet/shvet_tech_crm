@@ -6,7 +6,10 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadActivityController;
 use App\Http\Controllers\LeadArchiveController;
+use App\Http\Controllers\LeadBulkController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LeadExportController;
+use App\Http\Controllers\LeadImportController;
 use App\Http\Controllers\LeadOwnerController;
 use App\Http\Controllers\LeadStageController;
 use App\Http\Controllers\Legal\LegalPageController;
@@ -15,6 +18,8 @@ use App\Http\Controllers\Meta\MetaIntegrationController;
 use App\Http\Controllers\Meta\MetaMappingController;
 use App\Http\Controllers\PipelineController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Settings\PipelineSettingsController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\WhatsApp\InboxController;
@@ -64,6 +69,10 @@ Route::middleware(['auth', EnsureUserIsActive::class, AuthenticateSession::class
         // so an id the user may not see is a 404, exactly like an id that does not exist.
         Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
         Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');
+        Route::get('/leads/export', LeadExportController::class)->middleware('throttle:lead-export')->name('leads.export');
+        Route::get('/leads/import', [LeadImportController::class, 'create'])->name('leads.import');
+        Route::post('/leads/import', [LeadImportController::class, 'store'])->middleware('throttle:lead-import')->name('leads.import.store');
+        Route::post('/leads/bulk', LeadBulkController::class)->middleware('throttle:lead-bulk')->name('leads.bulk');
         Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
         Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
         Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
@@ -76,8 +85,17 @@ Route::middleware(['auth', EnsureUserIsActive::class, AuthenticateSession::class
         Route::post('/leads/{lead}/tasks', [TaskController::class, 'store'])->name('leads.tasks.store');
 
         Route::get('/pipeline', [PipelineController::class, 'index'])->name('pipeline');
+        Route::get('/reports', ReportController::class)->name('reports');
+
+        Route::prefix('settings/pipeline')->name('settings.pipeline.')->group(function () {
+            Route::get('/', [PipelineSettingsController::class, 'index'])->name('index');
+            Route::post('/stages', [PipelineSettingsController::class, 'store'])->name('store');
+            Route::patch('/stages/{stage}', [PipelineSettingsController::class, 'update'])->whereNumber('stage')->name('update');
+            Route::put('/order', [PipelineSettingsController::class, 'reorder'])->name('reorder');
+        });
 
         Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+        Route::patch('/tasks/reminders', [TaskController::class, 'reminders'])->name('tasks.reminders');
         Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
         Route::post('/tasks/{task}/complete', [TaskController::class, 'complete'])->name('tasks.complete');
         Route::post('/tasks/{task}/reopen', [TaskController::class, 'reopen'])->name('tasks.reopen');
