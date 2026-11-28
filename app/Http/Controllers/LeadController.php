@@ -48,6 +48,9 @@ class LeadController extends Controller
             'can' => [
                 'create' => Gate::allows('create', Lead::class),
                 'see_archived' => LeadVisibility::seesArchived($user),
+                'export' => $user->checkPermissionTo(Permission::LeadsExport->value),
+                'import' => $user->checkPermissionTo(Permission::LeadsImport->value),
+                'bulk' => $user->checkPermissionTo(Permission::LeadsBulkUpdate->value),
             ],
         ]);
     }

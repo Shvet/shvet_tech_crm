@@ -25,4 +25,18 @@ return [
     */
     'leads_per_page' => (int) env('CRM_LEADS_PER_PAGE', 20),
     'pipeline_cards_per_stage' => (int) env('CRM_PIPELINE_CARDS_PER_STAGE', 30),
+
+    /*
+    | CSV export / import and bulk actions.
+    */
+    'export_max_rows' => (int) env('CRM_EXPORT_MAX_ROWS', 50000),
+    'import_max_rows' => (int) env('CRM_IMPORT_MAX_ROWS', 2000),
+    'import_max_kb' => (int) env('CRM_IMPORT_MAX_KB', 2048),
+    'bulk_max_leads' => 100,
+
+    /*
+    | Follow-up reminder digest: sent once a day, at this local hour (tenant timezone), to members with open
+    | follow-ups that are overdue or due today. Needs the scheduler (`schedule:run` every minute).
+    */
+    'reminder_hour' => (int) env('CRM_REMINDER_HOUR', 8),
 ];

@@ -18,7 +18,7 @@ const baseProps = (): ComponentProps<typeof Index> => ({
     leads: { data: [lead('L1', 'Priya Nair'), lead('L2', 'Ravi Shah', { owner: null })], links: [], current_page: 1, last_page: 1, total: 2, from: 1, to: 2 },
     filters: { q: '', stage: null, source: null, owner: null, priority: null, archived: false, sort: 'created', dir: 'desc' },
     options: { stages: [stage(1, 'New'), stage(2, 'Won', 'won')], sources: [{ id: 1, name: 'Manual entry' }], owners: [{ id: 7, name: 'Asha' }], priorities: ['low', 'medium', 'high'] },
-    can: { create: true, see_archived: true },
+    can: { create: true, see_archived: true, export: true, import: true, bulk: true },
 });
 
 describe('Leads list', () => {
@@ -84,12 +84,56 @@ describe('Leads list', () => {
     it('hides the owner filter, create and archive controls for users without those abilities', () => {
         const props = baseProps();
         props.options.owners = [];
-        props.can = { create: false, see_archived: false };
+        props.can = { create: false, see_archived: false, export: false, import: false, bulk: false };
         render(<Index {...props} />);
 
         expect(screen.queryByLabelText('Owner')).toBeNull();
         expect(screen.queryByRole('link', { name: 'New lead' })).toBeNull();
         expect(screen.queryByRole('button', { name: /archived/i })).toBeNull();
+        expect(screen.queryByRole('link', { name: 'Export CSV' })).toBeNull();
+        expect(screen.queryByRole('link', { name: 'Import CSV' })).toBeNull();
+        expect(screen.queryByRole('checkbox')).toBeNull();
+    });
+
+    it('exports with the current filters', () => {
+        const props = baseProps();
+        props.filters = { ...props.filters, q: 'nair', stage: 2 };
+        render(<Index {...props} />);
+
+        const href = screen.getByRole('link', { name: 'Export CSV' }).getAttribute('href') ?? '';
+        expect(href.startsWith('/leads/export?')).toBe(true);
+        expect(new URLSearchParams(href.split('?')[1]).get('q')).toBe('nair');
+        expect(new URLSearchParams(href.split('?')[1]).get('stage')).toBe('2');
+        expect(screen.getByRole('link', { name: 'Import CSV' })).toHaveAttribute('href', '/leads/import');
+    });
+
+    it('bulk-assigns the selected leads and clears the selection afterwards', async () => {
+        render(<Index {...baseProps()} />);
+        expect(screen.queryByRole('region', { name: 'Bulk actions' })).toBeNull();
+
+        await userEvent.click(screen.getByLabelText('Select Priya Nair'));
+        const bar = screen.getByRole('region', { name: 'Bulk actions' });
+        expect(within(bar).getByText('1 selected')).toBeInTheDocument();
+        expect(within(bar).getByRole('button', { name: 'Apply' })).toBeDisabled();
+
+        await userEvent.selectOptions(within(bar).getByLabelText('Action'), 'assign');
+        await userEvent.selectOptions(within(bar).getByLabelText('New owner'), 'none');
+        await userEvent.click(within(bar).getByRole('button', { name: 'Apply' }));
+
+        expect(router.post).toHaveBeenCalledWith('/leads/bulk', { ids: ['L1'], action: 'assign', owner_id: null }, expect.any(Object));
+    });
+
+    it('select-all picks every lead on the page and moves them to a stage', async () => {
+        render(<Index {...baseProps()} />);
+        await userEvent.click(screen.getByLabelText('Select all leads on this page'));
+        const bar = screen.getByRole('region', { name: 'Bulk actions' });
+        expect(within(bar).getByText('2 selected')).toBeInTheDocument();
+
+        await userEvent.selectOptions(within(bar).getByLabelText('Action'), 'stage');
+        await userEvent.selectOptions(within(bar).getByLabelText('New stage'), '2');
+        await userEvent.click(within(bar).getByRole('button', { name: 'Apply' }));
+
+        expect(router.post).toHaveBeenCalledWith('/leads/bulk', { ids: ['L1', 'L2'], action: 'stage', pipeline_stage_id: 2 }, expect.any(Object));
     });
 
     it('toggles the archived view for managers', async () => {

@@ -6,7 +6,10 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadActivityController;
 use App\Http\Controllers\LeadArchiveController;
+use App\Http\Controllers\LeadBulkController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LeadExportController;
+use App\Http\Controllers\LeadImportController;
 use App\Http\Controllers\LeadOwnerController;
 use App\Http\Controllers\LeadStageController;
 use App\Http\Controllers\Legal\LegalPageController;
@@ -64,6 +67,10 @@ Route::middleware(['auth', EnsureUserIsActive::class, AuthenticateSession::class
         // so an id the user may not see is a 404, exactly like an id that does not exist.
         Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
         Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');
+        Route::get('/leads/export', LeadExportController::class)->middleware('throttle:10,1')->name('leads.export');
+        Route::get('/leads/import', [LeadImportController::class, 'create'])->name('leads.import');
+        Route::post('/leads/import', [LeadImportController::class, 'store'])->middleware('throttle:10,1')->name('leads.import.store');
+        Route::post('/leads/bulk', LeadBulkController::class)->middleware('throttle:30,1')->name('leads.bulk');
         Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
         Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
         Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');

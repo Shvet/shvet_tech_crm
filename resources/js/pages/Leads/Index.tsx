@@ -1,5 +1,6 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState, type FormEvent } from 'react';
+import BulkBar from '../../components/BulkBar';
 import AppLayout from '../../components/AppLayout';
 import { PriorityBadge, StageBadge } from '../../components/Badges';
 import Pagination from '../../components/Pagination';
@@ -23,7 +24,7 @@ interface Props {
     leads: Paginated<Lead>;
     filters: Filters;
     options: { stages: Stage[]; sources: { id: number; name: string }[]; owners: Option[]; priorities: string[] };
-    can: { create: boolean; see_archived: boolean };
+    can: { create: boolean; see_archived: boolean; export: boolean; import: boolean; bulk: boolean };
 }
 
 const COLUMNS: { label: string; sort?: string }[] = [
@@ -40,6 +41,12 @@ const COLUMNS: { label: string; sort?: string }[] = [
 export default function Index({ leads, filters, options, can }: Props) {
     const tenant = usePage<SharedProps>().props.tenant;
     const [q, setQ] = useState(filters.q);
+    const [selected, setSelected] = useState<string[]>([]);
+    const pageIds = leads.data.map((l) => l.id);
+    const allSelected = pageIds.length > 0 && pageIds.every((id) => selected.includes(id));
+    const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+    const toggleAll = () => setSelected(allSelected ? [] : pageIds);
+    const exportHref = '/leads/export?' + new URLSearchParams(cleanQuery({ ...filters })).toString();
 
     const go = (changes: Partial<Record<keyof Filters, string | number | boolean | null>>) => {
         router.get('/leads', cleanQuery({ ...filters, q, ...changes }), { preserveState: true, replace: true });
@@ -112,7 +119,17 @@ export default function Index({ leads, filters, options, can }: Props) {
                         </button>
                     )}
                 </form>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                    {can.export && (
+                        <a href={exportHref} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50">
+                            Export CSV
+                        </a>
+                    )}
+                    {can.import && (
+                        <Link href="/leads/import" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50">
+                            Import CSV
+                        </Link>
+                    )}
                     {can.see_archived && (
                         <button type="button" onClick={() => go({ archived: !filters.archived })} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50" aria-pressed={filters.archived}>
                             {filters.archived ? 'Show active' : 'Show archived'}
@@ -126,6 +143,10 @@ export default function Index({ leads, filters, options, can }: Props) {
                 </div>
             </div>
 
+            {can.bulk && selected.length > 0 && (
+                <BulkBar ids={selected} stages={options.stages} owners={options.owners} archived={filters.archived} onDone={() => setSelected([])} />
+            )}
+
             {leads.data.length === 0 ? (
                 <EmptyState>{anyFilter ? 'No leads match these filters.' : 'No leads yet. Create your first lead to get started.'}</EmptyState>
             ) : (
@@ -133,6 +154,11 @@ export default function Index({ leads, filters, options, can }: Props) {
                     <table className="min-w-full text-left text-sm">
                         <thead className="bg-slate-50 text-slate-600">
                             <tr>
+                                {can.bulk && (
+                                    <th scope="col" className="w-8 px-3 py-2">
+                                        <input type="checkbox" aria-label="Select all leads on this page" checked={allSelected} onChange={toggleAll} />
+                                    </th>
+                                )}
                                 {COLUMNS.map((c) => (
                                     <th key={c.label} scope="col" className="px-3 py-2" aria-sort={c.sort && filters.sort === c.sort ? (filters.dir === 'asc' ? 'ascending' : 'descending') : undefined}>
                                         {c.sort ? (
@@ -150,6 +176,11 @@ export default function Index({ leads, filters, options, can }: Props) {
                         <tbody>
                             {leads.data.map((l) => (
                                 <tr key={l.id} className="border-t border-slate-100 align-top">
+                                    {can.bulk && (
+                                        <td className="px-3 py-2">
+                                            <input type="checkbox" aria-label={`Select ${l.full_name}`} checked={selected.includes(l.id)} onChange={() => toggle(l.id)} />
+                                        </td>
+                                    )}
                                     <td className="px-3 py-2">
                                         <Link href={`/leads/${l.id}`} className="font-medium text-indigo-700 hover:underline">
                                             {l.full_name}
