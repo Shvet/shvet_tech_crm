@@ -13,6 +13,7 @@ use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\FollowUpTask;
 use App\Models\Lead;
+use App\Models\TenantMembership;
 use App\Services\Leads\LeadOptions;
 use App\Services\Leads\LeadVisibility;
 use App\Services\Tasks\TaskBuckets;
@@ -52,7 +53,22 @@ class TaskController extends Controller
                 'members' => LeadVisibility::level($user) === LeadVisibility::ALL ? LeadOptions::members() : [],
                 'priorities' => Priority::values(),
             ],
+            'reminders' => [
+                'enabled' => (bool) TenantMembership::query()->where('user_id', $user->getKey())->value('task_reminders'),
+                'hour' => (int) config('crm.reminder_hour', 8),
+            ],
         ]);
+    }
+
+    /** The member's own daily reminder e-mail preference for this workspace. */
+    public function reminders(Request $request): RedirectResponse
+    {
+        Gate::authorize('viewAny', FollowUpTask::class);
+        $data = $request->validate(['enabled' => ['required', 'boolean']]);
+
+        TenantMembership::query()->where('user_id', $request->user()->getKey())->update(['task_reminders' => $data['enabled']]);
+
+        return back()->with('status', $data['enabled'] ? 'Daily follow-up e-mails are on.' : 'Daily follow-up e-mails are off.');
     }
 
     public function store(StoreTaskRequest $request, Lead $lead, CreateTask $createTask): RedirectResponse

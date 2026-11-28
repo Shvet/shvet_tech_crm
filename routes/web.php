@@ -85,6 +85,7 @@ Route::middleware(['auth', EnsureUserIsActive::class, AuthenticateSession::class
         Route::get('/pipeline', [PipelineController::class, 'index'])->name('pipeline');
 
         Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+        Route::patch('/tasks/reminders', [TaskController::class, 'reminders'])->name('tasks.reminders');
         Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
         Route::post('/tasks/{task}/complete', [TaskController::class, 'complete'])->name('tasks.complete');
         Route::post('/tasks/{task}/reopen', [TaskController::class, 'reopen'])->name('tasks.reopen');

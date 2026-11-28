@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** The only way a user gains access to a tenant. Status must be Active to count. */
-#[Fillable(['tenant_id', 'user_id', 'status', 'invited_by', 'joined_at', 'invited_at', 'invitation_expires_at'])]
+#[Fillable(['tenant_id', 'user_id', 'status', 'task_reminders', 'invited_by', 'joined_at', 'invited_at', 'invitation_expires_at'])]
 class TenantMembership extends Model
 {
     use BelongsToTenant;
@@ -18,6 +18,7 @@ class TenantMembership extends Model
     {
         return [
             'status' => MembershipStatus::class,
+            'task_reminders' => 'boolean',
             'joined_at' => 'datetime',
             'invited_at' => 'datetime',
             'invitation_expires_at' => 'datetime',
