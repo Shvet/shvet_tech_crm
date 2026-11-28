@@ -18,6 +18,7 @@ use App\Http\Controllers\Meta\MetaIntegrationController;
 use App\Http\Controllers\Meta\MetaMappingController;
 use App\Http\Controllers\PipelineController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Settings\PipelineSettingsController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
@@ -68,10 +69,10 @@ Route::middleware(['auth', EnsureUserIsActive::class, AuthenticateSession::class
         // so an id the user may not see is a 404, exactly like an id that does not exist.
         Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
         Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');
-        Route::get('/leads/export', LeadExportController::class)->middleware('throttle:10,1')->name('leads.export');
+        Route::get('/leads/export', LeadExportController::class)->middleware('throttle:lead-export')->name('leads.export');
         Route::get('/leads/import', [LeadImportController::class, 'create'])->name('leads.import');
-        Route::post('/leads/import', [LeadImportController::class, 'store'])->middleware('throttle:10,1')->name('leads.import.store');
-        Route::post('/leads/bulk', LeadBulkController::class)->middleware('throttle:30,1')->name('leads.bulk');
+        Route::post('/leads/import', [LeadImportController::class, 'store'])->middleware('throttle:lead-import')->name('leads.import.store');
+        Route::post('/leads/bulk', LeadBulkController::class)->middleware('throttle:lead-bulk')->name('leads.bulk');
         Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
         Route::get('/leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
         Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
@@ -84,6 +85,7 @@ Route::middleware(['auth', EnsureUserIsActive::class, AuthenticateSession::class
         Route::post('/leads/{lead}/tasks', [TaskController::class, 'store'])->name('leads.tasks.store');
 
         Route::get('/pipeline', [PipelineController::class, 'index'])->name('pipeline');
+        Route::get('/reports', ReportController::class)->name('reports');
 
         Route::prefix('settings/pipeline')->name('settings.pipeline.')->group(function () {
             Route::get('/', [PipelineSettingsController::class, 'index'])->name('index');

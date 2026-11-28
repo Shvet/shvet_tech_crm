@@ -83,6 +83,15 @@ class LeadTransferTest extends TestCase
         $this->runIn($this->t, fn () => $this->assertSame(2, AuditLog::query()->where('action', 'leads.exported')->count()));
     }
 
+    public function test_export_limit_is_its_own_counter_not_the_general_page_limit(): void
+    {
+        // A bare throttle:10,1 would share the per-user counter with the group's 240/min page limit.
+        for ($i = 0; $i < 12; $i++) {
+            $this->as($this->manager)->get('/leads')->assertOk();
+        }
+        $this->as($this->manager)->get('/leads/export')->assertOk();
+    }
+
     public function test_export_neutralizes_spreadsheet_formulas(): void
     {
         $this->lead($this->t, ['full_name' => '=HYPERLINK("http://evil.test","x")', 'company_name' => '+cmd|calc']);

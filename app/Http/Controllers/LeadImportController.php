@@ -6,6 +6,7 @@ use App\Enums\Permission;
 use App\Services\Leads\LeadCsvImporter;
 use App\Services\Leads\LeadOptions;
 use App\Support\AuditLogger;
+use App\Support\Facades\Tenancy;
 use App\Support\TenantRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,7 +41,7 @@ class LeadImportController extends Controller
         ]);
 
         // One import at a time per user: a double-clicked button must not import the same file twice in parallel.
-        $lock = Cache::lock('lead-import|'.$user->getKey(), 300);
+        $lock = Cache::lock('t:'.Tenancy::id().':lead-import:'.$user->getKey(), 300);
         if (! $lock->get()) {
             return back()->withErrors(['file' => 'An import is already running. Wait for it to finish.']);
         }

@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import AppLayout from '../../components/AppLayout';
 import Pagination from '../../components/Pagination';
 import TaskRow from '../../components/TaskRow';
@@ -30,6 +31,12 @@ const EMPTY: Record<Props['tab'], string> = {
 };
 
 export default function Index({ tasks, tab, assignee, counts, options, reminders }: Props) {
+    const [remindersOn, setRemindersOn] = useState(reminders?.enabled ?? false);
+    useEffect(() => setRemindersOn(reminders?.enabled ?? false), [reminders?.enabled]);
+    const toggleReminders = (enabled: boolean) => {
+        setRemindersOn(enabled);
+        router.patch('/tasks/reminders', { enabled }, { preserveScroll: true, onError: () => setRemindersOn(!enabled) });
+    };
     const href = (t: string, a: string = assignee) => `/tasks?${new URLSearchParams(cleanQuery({ tab: t, assignee: a === 'me' ? '' : a })).toString()}`;
 
     return (
@@ -87,8 +94,8 @@ export default function Index({ tasks, tab, assignee, counts, options, reminders
                         id="task-reminders"
                         type="checkbox"
                         className="mt-1"
-                        checked={reminders.enabled}
-                        onChange={(e) => router.patch('/tasks/reminders', { enabled: e.target.checked }, { preserveScroll: true, preserveState: true })}
+                        checked={remindersOn}
+                        onChange={(e) => toggleReminders(e.target.checked)}
                     />
                     <label htmlFor="task-reminders">
                         E-mail me a daily summary of my overdue and due-today follow-ups in this workspace (sent from {String(reminders.hour).padStart(2, '0')}:00 workspace time, only on days with something due).
